@@ -1,0 +1,34 @@
+:root {
+  --primary-gradient: linear-gradient(90deg, #5B6CFF, #6A11CB);
+  --primary-purple: #6A11CB;
+  --primary-blue: #5B6CFF;
+  --bg-light: #f4f6f8;
+  --card-bg: #ffffff;
+  --text-dark: #222;
+}
+
+/* Primary Gradient Button */
+.btn-primary {
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  padding: 14px 22px;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+/* Outline Button */
+.btn-outline {
+  border: 2px solid var(--primary-purple);
+  color: var(--primary-purple);
+  background: transparent;
+  padding: 12px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+}

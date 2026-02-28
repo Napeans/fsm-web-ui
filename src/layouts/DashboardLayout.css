@@ -1,0 +1,101 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  background: #f4f6f9;
+}
+
+/* SIDEBAR */
+.admin-sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #5B6CFF, #6A11CB);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: 0.3s;
+}
+
+.admin-sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar-header {
+  padding: 20px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 18px;
+}
+
+.admin-sidebar nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-sidebar a {
+  padding: 14px 20px;
+  text-decoration: none;
+  color: white;
+  transition: 0.2s;
+}
+
+.admin-sidebar a:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.admin-sidebar a.active {
+  background: rgba(255,255,255,0.25);
+}
+
+/* MAIN */
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TOPBAR */
+.admin-topbar {
+  height: 60px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.admin-topbar button {
+  border: none;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logout-btn {
+  background: #6A11CB;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+/* CONTENT */
+.admin-content {
+  flex: 1;
+  padding: 25px;
+  overflow-y: auto;
+}
