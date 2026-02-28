@@ -1,101 +1,167 @@
-/* Reset */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: "Segoe UI", sans-serif;
+:root {
+  --primary-purple: #6A11CB;
+  --secondary-purple: #5B6CFF;
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 80px;
+  --header-height: 64px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .admin-layout {
   display: flex;
   height: 100vh;
-  background: #f4f6f9;
+  background: #f4f7fe;
+  overflow: hidden;
 }
 
 /* SIDEBAR */
 .admin-sidebar {
-  width: 240px;
-  background: linear-gradient(180deg, #5B6CFF, #6A11CB);
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: linear-gradient(180deg, var(--secondary-purple), var(--primary-purple));
   color: white;
   display: flex;
   flex-direction: column;
-  transition: 0.3s;
+  z-index: 1000;
+  transition: var(--transition);
+  padding: 0; /* Important: No horizontal padding here to avoid hover gaps */
 }
 
-.admin-sidebar.collapsed {
-  width: 70px;
+/* Top Profile Area */
+.sidebar-top {
+  padding: 30px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.sidebar-header {
-  padding: 20px;
-  font-weight: bold;
+.profile-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   text-align: center;
-  font-size: 18px;
 }
 
-.admin-sidebar nav {
+/* NAV LINKS - Full Width Hover Fix */
+.sidebar-nav {
+  padding: 20px 0;
   display: flex;
   flex-direction: column;
 }
 
-.admin-sidebar a {
-  padding: 14px 20px;
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 24px; /* Vertical / Horizontal */
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
+  font-weight: 500;
+  transition: 0.2s;
+  width: 100%; /* Ensures background color fills the whole sidebar width */
+  box-sizing: border-box;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav a.active {
+  background: rgba(255, 255, 255, 0.15);
   color: white;
+  box-shadow: inset 4px 0 0 white; /* Use inset shadow instead of border to avoid shifting */
+}
+
+/* TOPBAR - Clean Professional Look (No Green) */
+.admin-topbar {
+  height: var(--header-height);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid #e9edf7;
+  width: 100%;
+}
+
+.icon-btn {
+  background: #f4f7fe;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #1b2559;
   transition: 0.2s;
 }
 
-.admin-sidebar a:hover {
-  background: rgba(255,255,255,0.15);
+.icon-btn:hover {
+  background: #e2e8f0;
 }
 
-.admin-sidebar a.active {
-  background: rgba(255,255,255,0.25);
+.logout-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-purple);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
 }
 
-/* MAIN */
+/* RESPONSIVE LOGIC */
+
+/* Desktop Collapsed State */
+.sidebar-collapsed .admin-sidebar {
+  width: var(--sidebar-collapsed-width);
+  min-width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-collapsed .sidebar-nav a {
+  justify-content: center;
+  padding: 15px 0;
+}
+
+/* Mobile Rules */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed;
+    left: -100%;
+    height: 100vh;
+  }
+
+  .sidebar-expanded .admin-sidebar {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+
+  .sidebar-expanded .sidebar-overlay {
+    display: block;
+  }
+
+  .admin-main {
+    margin-left: 0 !important;
+  }
+}
+
 .admin-main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  transition: var(--transition);
 }
 
-/* TOPBAR */
-.admin-topbar {
-  height: 60px;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.admin-topbar button {
-  border: none;
-  background: none;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.logout-btn {
-  background: #6A11CB;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-}
-
-/* CONTENT */
 .admin-content {
   flex: 1;
-  padding: 25px;
+  padding: 30px;
   overflow-y: auto;
 }

@@ -1,8 +1,10 @@
+/* index.css */
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
 }
+ 
 
 .container {
   max-width: 400px;
@@ -10,7 +12,16 @@ body {
   padding: 20px;
 }
 
-input, button {
+/* Change this in index.css */
+input, .form-container button { /* Scope it to forms only */
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.container input, 
+.container button {
   width: 100%;
   padding: 12px;
   margin-bottom: 10px;
@@ -21,4 +32,18 @@ button {
   background: #1976d2;
   color: white;
   border: none;
+  cursor: pointer;
+}
+
+/* Find this section and change it to only target buttons inside forms/containers */
+.container button { 
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+/* Add this to ensure the nav buttons stay small */
+.icon-btn, .toggle-btn {
+  width: auto !important; 
 }

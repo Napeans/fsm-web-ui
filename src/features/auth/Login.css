@@ -25,7 +25,8 @@
 /* LEFT PANEL */
 .login-left {
   flex: 1;
-  background: #2ea44f;
+  /* background: #2ea44f; */
+    background: var(--primary-gradient);
   color: white;
   display: flex;
   flex-direction: column;
@@ -96,9 +97,9 @@
   outline: none;
 }
 
-.login-right input[type="text"]:focus {
+/* .login-right input[type="text"]:focus {
   border-color: #2ea44f;
-}
+} */
 
 /* PIN */
 .pin-container {
@@ -116,9 +117,9 @@
   border: 1px solid #e0e0e0;
 }
 
-.pin-container input:focus {
+/* .pin-container input:focus {
   border-color: #2ea44f;
-}
+} */
 
 /* BUTTON */
 button {
@@ -126,7 +127,7 @@ button {
   padding: 16px;
   border-radius: 40px;
   border: none;
-  background: #2ea44f;
+  background: var(--primary-gradient);
   color: white;
   font-size: 16px;
   font-weight: 600;
@@ -134,9 +135,9 @@ button {
   transition: 0.2s ease;
 }
 
-button:hover {
+/* button:hover {
   background: #259444;
-}
+} */
 
 /* ========================= */
 /* 🔥 MOBILE OPTIMIZATION */
