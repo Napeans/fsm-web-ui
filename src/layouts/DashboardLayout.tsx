@@ -4,10 +4,10 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   UserPlus, 
+  ListOrdered,
   Users, 
   LogOut, 
   Menu, 
-  X,
   UserCircle 
 } from "lucide-react";
 import "./DashboardLayout.css";
@@ -49,7 +49,12 @@ const DashboardLayout = ({ children }: Props) => {
           
           <NavLink to="/lead-create" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <UserPlus size={22} />
-            {isSidebarOpen && <span>Lead Manager</span>}
+            {isSidebarOpen && <span>Create Lead</span>}
+          </NavLink>
+
+          <NavLink to="/leads" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
+            <ListOrdered size={22} />
+            {isSidebarOpen && <span>List of Leads</span>}
           </NavLink>
           
           <NavLink to="/users" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>

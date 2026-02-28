@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Search, MapPin, Send, PlusCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, MapPin, Send, PlusCircle, Eraser } from "lucide-react";
 import { fetchCustomerByMobile, createLead } from "./lead.service";
 import { extractLatLng } from "../../utils/mapUtils";
 import "./LeadCreate.css";
@@ -11,10 +12,7 @@ const LeadCreate = () => {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number>(0);
   const [serviceTypeId, setServiceTypeId] = useState<number>(0);
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleHour, setScheduleHour] = useState("");
-  const [scheduleMinute, setScheduleMinute] = useState("");
-  const [schedulePeriod, setSchedulePeriod] = useState<"AM" | "PM">("AM");
+  const [scheduledDateTime, setScheduledDateTime] = useState("");
   const [remarks, setRemarks] = useState("");
   const [latLng, setLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -36,13 +34,47 @@ const LeadCreate = () => {
   });
   const [customerForm, setCustomerForm] = useState({
     customerName: "",
+    customerGST: "",
     whatsappNo: "",
     emailId: "",
   });
+  const navigate = useNavigate();
 
   const isExistingCustomer = activeCustomerId > 0;
-  const hourOptions = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-  const minuteOptions = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+
+  const resetForm = () => {
+    setMobile("");
+    setCustomer(null);
+    setAddresses([]);
+    setSelectedAddressId(0);
+    setServiceTypeId(0);
+    setScheduledDateTime("");
+    setRemarks("");
+    setLatLng(null);
+    setHasSearched(false);
+    setActiveCustomerId(0);
+    setShowAddressModal(false);
+    setAddressMapLink("");
+    setDraftAddress(null);
+    setAddressForm({
+      customerAddressId: 0,
+      addressType: "",
+      addressLine1: "",
+      area: "",
+      city: "",
+      state: "",
+      pincode: "",
+      latitude: null,
+      longitude: null,
+      isDefault: false,
+    });
+    setCustomerForm({
+      customerName: "",
+      customerGST: "",
+      whatsappNo: "",
+      emailId: "",
+    });
+  };
 
   const resolveAddressLatLng = (address: any) => {
     const latitude = Number(address?.Latitude ?? address?.latitude ?? 0);
@@ -76,6 +108,7 @@ const LeadCreate = () => {
         setAddresses(addressList);
         setCustomerForm({
           customerName: data.customerName ?? data.CustomerName ?? "",
+          customerGST: data.customerGST ?? data.CustomerGST ?? "",
           whatsappNo: data.whatsappNo ?? data.WhatsappNo ?? mobile,
           emailId: data.emailId ?? data.EmailId ?? "",
         });
@@ -90,6 +123,7 @@ const LeadCreate = () => {
       setCustomerForm((prev) => ({
         ...prev,
         customerName: "",
+        customerGST: "",
         whatsappNo: prev.whatsappNo || mobile,
       }));
       alert("New customer detected. Add address in popup.");
@@ -116,6 +150,7 @@ const LeadCreate = () => {
 
     setCustomerForm((prev) => ({
       customerName: prev.customerName || customer?.customerName || customer?.CustomerName || "",
+      customerGST: prev.customerGST || customer?.customerGST || customer?.CustomerGST || "",
       whatsappNo: prev.whatsappNo || customer?.whatsappNo || customer?.WhatsappNo || mobile,
       emailId: prev.emailId || customer?.emailId || customer?.EmailId || "",
     }));
@@ -154,7 +189,10 @@ const LeadCreate = () => {
       return;
     }
 
-    setDraftAddress({ ...addressForm });
+    setDraftAddress({
+      ...addressForm,
+      googleMapLink: addressMapLink.trim() || undefined,
+    });
     setSelectedAddressId(0);
     if (addressForm.latitude && addressForm.longitude) {
       setLatLng({ latitude: Number(addressForm.latitude), longitude: Number(addressForm.longitude) });
@@ -176,22 +214,14 @@ const LeadCreate = () => {
       return;
     }
 
-    if (!scheduleDate || !scheduleHour || !scheduleMinute) {
+    if (!scheduledDateTime) {
       alert("Select schedule date and time");
       return;
     }
 
-    const hour12 = Number(scheduleHour);
-    let hour24 = hour12 % 12;
-    if (schedulePeriod === "PM") {
-      hour24 += 12;
-    }
-    const scheduledAt = new Date(`${scheduleDate}T00:00:00`);
-    scheduledAt.setHours(hour24, Number(scheduleMinute), 0, 0);
-
     const basePayload = {
       serviceTypeId,
-      scheduledOn: scheduledAt.toISOString(),
+      scheduledOn: new Date(scheduledDateTime).toISOString(),
       remarks,
     };
 
@@ -206,6 +236,7 @@ const LeadCreate = () => {
             ...basePayload,
             customerId: isExistingCustomer ? activeCustomerId : undefined,
             customerName: customerForm.customerName,
+            customerGST: customerForm.customerGST,
             mobileNo: mobile,
             whatsappNo: customerForm.whatsappNo,
             emailId: customerForm.emailId,
@@ -236,7 +267,8 @@ const LeadCreate = () => {
       }
 
       await createLead(payload);
-      alert("Lead created successfully");
+      resetForm();
+      navigate("/leads");
     } catch (error) {
       console.error("Create lead failed", error);
       alert("Unable to create lead");
@@ -294,13 +326,23 @@ const LeadCreate = () => {
                 {isExistingCustomer ? (
                   <p className="help-text">Customer Name: {customerForm.customerName || "-"}</p>
                 ) : (
-                  <div className="input-group">
-                    <label>Customer Name</label>
-                    <input
-                      value={customerForm.customerName}
-                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }))}
-                      placeholder="Enter customer name"
-                    />
+                  <div className="modal-grid">
+                    <div className="input-group">
+                      <label>Customer Name</label>
+                      <input
+                        value={customerForm.customerName}
+                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }))}
+                        placeholder="Enter customer name"
+                      />
+                    </div>
+                    <div className="input-group">
+                      <label>CustomerGST</label>
+                      <input
+                        value={customerForm.customerGST}
+                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerGST: e.target.value }))}
+                        placeholder="Enter GST number"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -339,6 +381,9 @@ const LeadCreate = () => {
                         ? `${draftAddress.latitude}, ${draftAddress.longitude}`
                         : "-"}
                     </p>
+                    <p className="help-text">
+                      <strong>Map Link:</strong> {draftAddress.googleMapLink || "-"}
+                    </p>
                   </div>
                 )}
 
@@ -368,33 +413,11 @@ const LeadCreate = () => {
 
             <div className="input-group">
               <label>Schedule Date & Time</label>
-              <div className="schedule-group">
-                <input
-                  type="date"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                />
-                <select value={scheduleHour} onChange={(e) => setScheduleHour(e.target.value)}>
-                  <option value="">HH</option>
-                  {hourOptions.map((hour) => (
-                    <option key={hour} value={hour}>
-                      {hour}
-                    </option>
-                  ))}
-                </select>
-                <select value={scheduleMinute} onChange={(e) => setScheduleMinute(e.target.value)}>
-                  <option value="">MM</option>
-                  {minuteOptions.map((minute) => (
-                    <option key={minute} value={minute}>
-                      {minute}
-                    </option>
-                  ))}
-                </select>
-                <select value={schedulePeriod} onChange={(e) => setSchedulePeriod(e.target.value as "AM" | "PM")}>
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-              </div>
+              <input
+                type="datetime-local"
+                value={scheduledDateTime}
+                onChange={(e) => setScheduledDateTime(e.target.value)}
+              />
             </div>
 
             <div className="input-group">
@@ -429,14 +452,19 @@ const LeadCreate = () => {
               <p className="help-text">Select existing address or add new address to view map preview.</p>
             )}
 
-            <div className="button-row">
-              <button className="btn-primary" onClick={handleCreateLead}>
-                <Send size={16} />
-                Create Lead
-              </button>
-            </div>
           </div>
         </div>
+      </div>
+
+      <div className="page-actions">
+        <button className="btn-outline clear-form-btn" onClick={resetForm}>
+          <Eraser size={16} />
+          Clear
+        </button>
+        <button className="btn-primary create-lead-btn" onClick={handleCreateLead}>
+          <Send size={16} />
+          Create Lead
+        </button>
       </div>
 
       {showAddressModal && (
@@ -454,13 +482,23 @@ const LeadCreate = () => {
                     <p className="help-text">{customerForm.customerName || "-"}</p>
                   </div>
                 ) : (
-                  <div className="input-group">
-                    <label>CustomerName</label>
-                    <input
-                      value={customerForm.customerName}
-                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }))}
-                      placeholder="Customer name"
-                    />
+                  <div className="modal-grid full-span">
+                    <div className="input-group">
+                      <label>CustomerName</label>
+                      <input
+                        value={customerForm.customerName}
+                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }))}
+                        placeholder="Customer name"
+                      />
+                    </div>
+                    <div className="input-group">
+                      <label>CustomerGST</label>
+                      <input
+                        value={customerForm.customerGST}
+                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerGST: e.target.value }))}
+                        placeholder="GST number"
+                      />
+                    </div>
                   </div>
                 )}
                 <div className="input-group">

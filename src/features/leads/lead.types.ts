@@ -16,6 +16,7 @@ export interface CreateLeadRequest {
   customerId?: number;
   customerAddressId?: number;
   customerName?: string;
+  customerGST?: string;
   mobileNo?: string;
   whatsappNo?: string;
   emailId?: string;
@@ -35,12 +36,14 @@ export interface CreateCustomerAddressRequest {
   pincode?: string;
   latitude?: number | null;
   longitude?: number | null;
+  googleMapLink?: string;
   isDefault?: boolean;
 }
 
 export interface CustomerCreateRequest {
   customerId?: number | null;
   customerName?: string;
+  customerGST?: string;
   mobileNo?: string;
   whatsappNo?: string;
   emailId?: string;

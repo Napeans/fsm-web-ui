@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../features/auth/Login";
 import LeadCreate from "../features/leads/LeadCreate";
+import LeadsList from "../features/leads/LeadsList";
 import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -25,6 +26,17 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <LeadCreate />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/leads"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <LeadsList />
             </DashboardLayout>
           </ProtectedRoute>
         }

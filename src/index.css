@@ -1,49 +1,28 @@
-/* index.css */
-body {
-  font-family: Arial, sans-serif;
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
   margin: 0;
-  padding: 0;
-}
- 
-
-.container {
-  max-width: 400px;
-  margin: auto;
-  padding: 20px;
+  min-height: 100%;
 }
 
-/* Change this in index.css */
-input, .form-container button { /* Scope it to forms only */
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
-  font-size: 16px;
+body {
+  font-family: "Manrope", "Segoe UI", sans-serif;
+  background: #eef2f7;
+  color: #0f172a;
+  line-height: 1.5;
 }
 
-.container input, 
-.container button {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
-  font-size: 16px;
-}
-
-button {
-  background: #1976d2;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-/* Find this section and change it to only target buttons inside forms/containers */
-.container button { 
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
-  font-size: 16px;
-}
-
-/* Add this to ensure the nav buttons stay small */
-.icon-btn, .toggle-btn {
-  width: auto !important; 
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
