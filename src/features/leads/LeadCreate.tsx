@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Search, MapPin, Send, PlusCircle } from "lucide-react";
-import { fetchCustomerByMobile, createLead, createCustomerAddress } from "./lead.service";
+import { fetchCustomerByMobile, createLead } from "./lead.service";
 import { extractLatLng } from "../../utils/mapUtils";
 import "./LeadCreate.css";
-import type { CustomerCreateRequest, CreateCustomerAddressRequest, CreateLeadRequest } from "./lead.types";
+import type { CreateCustomerAddressRequest, CreateLeadRequest } from "./lead.types";
 
 const LeadCreate = () => {
   const [mobile, setMobile] = useState("");
@@ -149,52 +149,20 @@ const LeadCreate = () => {
       return;
     }
 
-    if (isExistingCustomer) {
-      try {
-        const payload: CustomerCreateRequest = {
-          customerId: activeCustomerId,
-          customerName: customerForm.customerName,
-          mobileNo: mobile,
-          whatsappNo: customerForm.whatsappNo,
-          emailId: customerForm.emailId,
-          addresse: { ...addressForm },
-        };
-
-        await createCustomerAddress(payload);
-
-        const refreshedCustomer = await fetchCustomerByMobile(mobile);
-        const refreshedAddresses = refreshedCustomer?.Addresses ?? refreshedCustomer?.addresses ?? [];
-        setCustomer(refreshedCustomer);
-        setAddresses(refreshedAddresses);
-
-        if (refreshedAddresses.length > 0) {
-          const lastAddress = refreshedAddresses[refreshedAddresses.length - 1];
-          const addressId = Number(lastAddress.CustomerAddressId ?? lastAddress.customerAddressId ?? 0);
-          setSelectedAddressId(addressId);
-          resolveAddressLatLng(lastAddress);
-        }
-
-        setShowAddressModal(false);
-        alert("Address added successfully");
-      } catch (error) {
-        console.error("Add address failed", error);
-        alert("Unable to add address");
-      }
-      return;
-    }
-
-    if (!customerForm.customerName.trim()) {
+    if (!isExistingCustomer && !customerForm.customerName.trim()) {
       alert("CustomerName is required for new customer");
       return;
     }
 
     setDraftAddress({ ...addressForm });
+    setSelectedAddressId(0);
     if (addressForm.latitude && addressForm.longitude) {
       setLatLng({ latitude: Number(addressForm.latitude), longitude: Number(addressForm.longitude) });
     } else {
       setLatLng(null);
     }
     setShowAddressModal(false);
+    alert("Address saved in draft");
   };
 
   const handleCreateLead = async () => {
@@ -227,23 +195,25 @@ const LeadCreate = () => {
       remarks,
     };
 
-    const payload: CreateLeadRequest = isExistingCustomer
-      ? {
-          ...basePayload,
-          customerId: activeCustomerId,
-          customerAddressId: selectedAddressId,
-        }
-      : {
-          ...basePayload,
-          customerName: customerForm.customerName,
-          mobileNo: mobile,
-          whatsappNo: customerForm.whatsappNo,
-          emailId: customerForm.emailId,
-          addresse: draftAddress ?? undefined,
-        };
+    const payload: CreateLeadRequest =
+      isExistingCustomer && !draftAddress
+        ? {
+            ...basePayload,
+            customerId: activeCustomerId,
+            customerAddressId: selectedAddressId,
+          }
+        : {
+            ...basePayload,
+            customerId: isExistingCustomer ? activeCustomerId : undefined,
+            customerName: customerForm.customerName,
+            mobileNo: mobile,
+            whatsappNo: customerForm.whatsappNo,
+            emailId: customerForm.emailId,
+            addresse: draftAddress ?? undefined,
+          };
 
-    if (isExistingCustomer && !payload.customerAddressId) {
-      alert("Select an address");
+    if (isExistingCustomer && !draftAddress && !payload.customerAddressId) {
+      alert("Select an address or add new address");
       return;
     }
 
@@ -263,15 +233,6 @@ const LeadCreate = () => {
           alert("For new customer, fill name, mobile and address details");
           return;
         }
-
-        await createCustomerAddress({
-          customerId: 0,
-          customerName: payload.customerName,
-          mobileNo: payload.mobileNo,
-          whatsappNo: payload.whatsappNo,
-          emailId: payload.emailId,
-          addresse: address,
-        });
       }
 
       await createLead(payload);
@@ -360,9 +321,11 @@ const LeadCreate = () => {
                   </div>
                 )}
 
-                {!isExistingCustomer && draftAddress && (
+                {draftAddress && (
                   <div className="draft-address-preview">
-                    <p className="help-text">Address added in draft. It will be submitted with Create Lead.</p>
+                    <p className="help-text">
+                      Address added in draft. It will be submitted with Create Lead.
+                    </p>
                     <p className="help-text">
                       <strong>Type:</strong> {draftAddress.addressType || "-"} | <strong>Area:</strong>{" "}
                       {draftAddress.area || "-"} | <strong>Pincode:</strong> {draftAddress.pincode || "-"}

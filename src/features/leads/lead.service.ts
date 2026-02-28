@@ -9,7 +9,7 @@ export const fetchCustomerByMobile = async (mobile: string) => {
  
 
 export const createLead = async (data: CreateLeadRequest) => {
-  const res = await api.post("/leads", data);
+  const res = await api.post("/leads/create", data);
   return res.data;
 };
 
