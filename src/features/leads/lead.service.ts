@@ -1,5 +1,5 @@
 import api from "../../api/axios";
-import type { CreateLeadRequest } from "./lead.types";
+import type { CustomerCreateRequest, CreateLeadRequest } from "./lead.types";
 
 export const fetchCustomerByMobile = async (mobile: string) => {
   const res = await api.get(`/customers/search?mobile=${mobile}`);
@@ -10,5 +10,10 @@ export const fetchCustomerByMobile = async (mobile: string) => {
 
 export const createLead = async (data: CreateLeadRequest) => {
   const res = await api.post("/leads", data);
+  return res.data;
+};
+
+export const createCustomerAddress = async (data: CustomerCreateRequest) => {
+  const res = await api.post("/customer/create", data);
   return res.data;
 };

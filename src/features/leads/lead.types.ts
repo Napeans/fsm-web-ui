@@ -13,9 +13,36 @@ export interface CustomerAddress {
 }
 
 export interface CreateLeadRequest {
-  customerId: number;
-  customerAddressId: number;
+  customerId?: number;
+  customerAddressId?: number;
+  customerName?: string;
+  mobileNo?: string;
+  whatsappNo?: string;
+  emailId?: string;
+  addresse?: CreateCustomerAddressRequest;
   serviceTypeId: number;
   scheduledOn: string;
   remarks?: string;
+}
+
+export interface CreateCustomerAddressRequest {
+  customerAddressId?: number;
+  addressType?: string;
+  addressLine1?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  isDefault?: boolean;
+}
+
+export interface CustomerCreateRequest {
+  customerId?: number | null;
+  customerName?: string;
+  mobileNo?: string;
+  whatsappNo?: string;
+  emailId?: string;
+  addresse: CreateCustomerAddressRequest;
 }
