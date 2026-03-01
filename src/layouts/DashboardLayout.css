@@ -74,10 +74,14 @@
   background: #ffffff;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0 24px;
   border-bottom: 1px solid #e9edf7;
   width: 100%;
+}
+
+.topbar-right {
+  margin-left: auto;
 }
 
 .icon-btn {
@@ -90,6 +94,12 @@
   align-items: center;
   color: #1b2559;
   transition: 0.2s;
+}
+
+.menu-toggle {
+  width: auto !important;
+  margin: 0 !important;
+  flex: 0 0 auto;
 }
 
 .icon-btn:hover {

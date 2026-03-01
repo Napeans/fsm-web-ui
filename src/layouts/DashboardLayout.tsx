@@ -19,7 +19,12 @@ interface Props {
 const DashboardLayout = ({ children }: Props) => {
   // One state to rule them all: 
   // Desktop: toggles width | Mobile: toggles visibility
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+    return window.innerWidth >= 768;
+  });
   const navigate = useNavigate();
 
   const logout = () => {
@@ -42,10 +47,10 @@ const DashboardLayout = ({ children }: Props) => {
         </div>
 
         <nav className="sidebar-nav">
-          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
+          {/* <NavLink to="/dashboard" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <LayoutDashboard size={22} />
             {isSidebarOpen && <span>Dashboard</span>}
-          </NavLink>
+          </NavLink> */}
           
           <NavLink to="/lead-create" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <UserPlus size={22} />
@@ -57,10 +62,10 @@ const DashboardLayout = ({ children }: Props) => {
             {isSidebarOpen && <span>List of Leads</span>}
           </NavLink>
           
-          <NavLink to="/users" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
+          {/* <NavLink to="/users" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <Users size={22} />
             {isSidebarOpen && <span>User Manager</span>}
-          </NavLink>
+          </NavLink> */}
         </nav>
       </aside>
 
