@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   UserPlus, 
   ListOrdered,
+  BriefcaseBusiness,
   Users, 
   LogOut, 
   Menu, 
@@ -60,6 +61,11 @@ const DashboardLayout = ({ children }: Props) => {
           <NavLink to="/leads" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <ListOrdered size={22} />
             {isSidebarOpen && <span>List of Leads</span>}
+          </NavLink>
+
+          <NavLink to="/jobs" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
+            <BriefcaseBusiness size={22} />
+            {isSidebarOpen && <span>My Jobs</span>}
           </NavLink>
           
           {/* <NavLink to="/users" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>

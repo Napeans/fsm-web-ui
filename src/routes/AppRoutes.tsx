@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../features/auth/Login";
 import LeadCreate from "../features/leads/LeadCreate";
 import LeadsList from "../features/leads/LeadsList";
+import JobsList from "../features/jobs/JobsList";
 import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -37,6 +38,17 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <LeadsList />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/jobs"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <JobsList />
             </DashboardLayout>
           </ProtectedRoute>
         }
