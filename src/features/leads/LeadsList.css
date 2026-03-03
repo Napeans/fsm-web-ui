@@ -194,6 +194,12 @@
   width: auto;
 }
 
+.btn-subtext {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
 .card-btn-primary {
   border: 1px solid transparent;
   background: #6a11cb;

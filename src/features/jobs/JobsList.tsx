@@ -368,7 +368,7 @@ const JobsList = () => {
 
     setSavingPayment(true);
     try {
-      await api.post("/jobs/payment", {
+      await api.post("/jobs/payments", {
         JobId: jobId,
         Amount: amount,
         RefNumber: paymentRefNumber.trim(),
@@ -438,6 +438,12 @@ const JobsList = () => {
                 const status = getField(job, ["JobStatus", "jobStatus"]);
                 const assignedTech = Number(getField(job, ["AssignedTechnicianId", "assignedTechnicianId"], 0));
                 const invoiceNumber = getField(job, ["InvoiceNumber", "invoiceNumber"], "");
+                const hasInvoiceNumber =
+                  invoiceNumber !== null &&
+                  invoiceNumber !== undefined &&
+                  invoiceNumber !== "" &&
+                  invoiceNumber !== "-" &&
+                  String(invoiceNumber) !== "0";
                 const dueAmount = getField(job, ["DueAmount", "dueAmount"], 0);
                 const totalPayableAmount = getField(job, ["TotalPayableAmount", "totalPayableAmount"], 0);
                 const scheduledOn = formatDate(getField(job, ["ScheduledOn", "scheduledOn"], ""));
@@ -469,7 +475,7 @@ const JobsList = () => {
                       </p>
                       <p>Scheduled: {scheduledOn}</p>
                       <p>Technician: {findTechnicianName(assignedTech)}</p>
-                      {invoiceNumber && invoiceNumber !== "-" && (
+                      {hasInvoiceNumber && (
                         <p>
                           Invoice:
                           <span className="invoice-chip">{invoiceNumber}</span>
@@ -489,11 +495,13 @@ const JobsList = () => {
                     </div>
 
                     <div className="card-actions">
-                      <button className="card-btn card-btn-success" onClick={() => openPaymentPopup(job)}>
-                        Add Payment
-                      </button>
+                      {hasInvoiceNumber && (
+                        <button className="card-btn card-btn-success" onClick={() => openPaymentPopup(job)}>
+                          Add Payment
+                        </button>
+                      )}
                       <button className="card-btn card-btn-outline" onClick={() => openMoreInfo(job)}>
-                        More Info
+                        More Info <span className="btn-subtext">(Reassign)</span>
                       </button>
                     </div>
                   </article>
