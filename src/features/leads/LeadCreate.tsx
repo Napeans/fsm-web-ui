@@ -52,6 +52,7 @@ const LeadCreate = () => {
   const serviceTypeRef = useRef<HTMLSelectElement | null>(null);
   const scheduleRef = useRef<HTMLInputElement | null>(null);
   const addressLine1Ref = useRef<HTMLInputElement | null>(null);
+  const areaRef = useRef<HTMLInputElement | null>(null);
   const pincodeRef = useRef<HTMLInputElement | null>(null);
   const customerNameRef = useRef<HTMLInputElement | null>(null);
   const customerGstRef = useRef<HTMLInputElement | null>(null);
@@ -273,14 +274,17 @@ const LeadCreate = () => {
     if (customerForm.customerGST.trim() && !gstPattern.test(customerForm.customerGST.trim().toUpperCase())) {
       errors.customerGST = "Invalid GST format";
     }
-    if (!/^\d{10}$/.test(customerForm.whatsappNo.trim())) {
+    if (customerForm.whatsappNo.trim() && !/^\d{10}$/.test(customerForm.whatsappNo.trim())) {
       errors.whatsappNo = "Whatsapp number must be 10 digits";
     }
-    if (!customerForm.emailId.trim().toLowerCase().endsWith("@gmail.com")) {
+    if (customerForm.emailId.trim() && !customerForm.emailId.trim().toLowerCase().endsWith("@gmail.com")) {
       errors.emailId = "Email must end with @gmail.com";
     }
     if (!addressForm.addressLine1?.trim()) {
       errors.addressLine1 = "AddressLine1 is required";
+    }
+    if (!addressForm.area?.trim()) {
+      errors.addressArea = "Area is required";
     }
     if (!addressForm.pincode || addressForm.pincode.length !== 6) {
       errors.addressPincode = "Pincode must be 6 digits";
@@ -296,6 +300,8 @@ const LeadCreate = () => {
       whatsappRef.current?.focus();
     } else if (errors.emailId) {
       emailRef.current?.focus();
+    } else if (errors.addressArea) {
+      areaRef.current?.focus();
     } else if (errors.addressPincode) {
       pincodeRef.current?.focus();
     } else if (errors.addressLine1) {
@@ -740,7 +746,16 @@ const LeadCreate = () => {
 
                 <div className="input-group">
                   <label>Area</label>
-                  <input value={addressForm.area ?? ""} onChange={(e) => handleAddressFormChange("area", e.target.value)} />
+                  <input
+                    ref={areaRef}
+                    className={fieldErrors.addressArea ? "input-error" : ""}
+                    value={addressForm.area ?? ""}
+                    onChange={(e) => {
+                      handleAddressFormChange("area", e.target.value);
+                      clearFieldError("addressArea");
+                    }}
+                  />
+                  {fieldErrors.addressArea && <p className="error-text">{fieldErrors.addressArea}</p>}
                 </div>
 
                 <div className="input-group">
