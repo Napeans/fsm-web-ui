@@ -43,8 +43,13 @@ const Login = () => {
       return;
     }
 
-    if (!mobile.trim()) {
+    const enteredMobile = mobile.trim();
+    if (!enteredMobile) {
       showAlert("Enter mobile number");
+      return;
+    }
+    if (!/^\d{10}$/.test(enteredMobile)) {
+      showAlert("Mobile number must be 10 digits");
       return;
     }
 
@@ -58,7 +63,7 @@ const Login = () => {
     try {
       setLoggingIn(true);
       const res = await loginUser({
-        Username: mobile,
+        Username: enteredMobile,
         Password: fullPin,
         DeviceId: "web-device",
       });
@@ -99,7 +104,8 @@ const Login = () => {
           <input
             type="text"
             value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
+            maxLength={10}
+            onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
           />
 
           <label>Enter PIN</label>
