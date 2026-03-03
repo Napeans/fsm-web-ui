@@ -24,7 +24,8 @@
 
 /* LEFT PANEL */
 .login-left {
-  flex: 1;
+  flex: 0 0 50%;
+  min-width: 0;
   /* background: #2ea44f; */
     background: var(--primary-gradient);
   color: white;
@@ -67,17 +68,21 @@
 
 /* RIGHT PANEL */
 .login-right {
-  flex: 1;
+  flex: 0 0 50%;
+  min-width: 0;
   padding: 60px 50px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
 
 .login-right h2 {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 30px;
+  width: 100%;
+  max-width: 480px;
 }
 
 .login-right label {
@@ -85,10 +90,13 @@
   font-weight: 600;
   margin-bottom: 8px;
   display: block;
+  width: 100%;
+  max-width: 480px;
 }
 
 .login-right input[type="text"] {
   width: 100%;
+  max-width: 480px;
   padding: 14px 16px;
   margin-bottom: 25px;
   border-radius: 14px;
@@ -103,7 +111,10 @@
 
 /* PIN */
 .pin-container {
-  display: flex;
+  width: 100%;
+  max-width: 480px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 35px;
 }
@@ -124,7 +135,9 @@
 /* BUTTON */
 .login-right button {
   width: 100%;
-  padding: 16px;
+  max-width: 480px;
+  height: 56px;
+  padding: 0 16px;
   border-radius: 40px;
   border: none;
   background: var(--primary-gradient);

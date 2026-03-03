@@ -561,6 +561,85 @@
   color: #334155;
 }
 
+.convert-body input,
+.convert-body select,
+.convert-body textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #0f172a;
+  resize: vertical;
+}
+
+.update-job-btn {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.invoice-chip {
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #fdba74;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 800;
+  font-size: 0.76rem;
+}
+
+.job-finance-strip {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.amount-pill {
+  border-radius: 10px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: grid;
+  gap: 2px;
+}
+
+.amount-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.amount-pill strong {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.amount-pill-due {
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+.amount-pill-due .amount-label,
+.amount-pill-due strong {
+  color: #9a3412;
+}
+
+.amount-pill-payable {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.amount-pill-payable .amount-label,
+.amount-pill-payable strong {
+  color: #1d4ed8;
+}
+
 .convert-actions {
   padding: 12px 16px 16px;
   border-top: 1px solid #eef2f7;
@@ -625,5 +704,9 @@
 
   .schedule-inline-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .job-finance-strip {
+    grid-template-columns: 1fr;
   }
 }

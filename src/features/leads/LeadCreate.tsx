@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, MapPin, Send, PlusCircle, Eraser } from "lucide-react";
 import { fetchCustomerByMobile, createLead } from "./lead.service";
 import { extractLatLng } from "../../utils/mapUtils";
+import AppDialog from "../../components/AppDialog";
+import AppLoader from "../../components/AppLoader";
 import "./LeadCreate.css";
 import type { CreateCustomerAddressRequest, CreateLeadRequest } from "./lead.types";
 
@@ -38,9 +40,23 @@ const LeadCreate = () => {
     whatsappNo: "",
     emailId: "",
   });
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [loaderMessage, setLoaderMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [newCustomerNotice, setNewCustomerNotice] = useState("");
   const navigate = useNavigate();
+  const mobileRef = useRef<HTMLInputElement | null>(null);
+  const customerNameRef = useRef<HTMLInputElement | null>(null);
+  const customerGstRef = useRef<HTMLInputElement | null>(null);
+  const serviceTypeRef = useRef<HTMLSelectElement | null>(null);
+  const scheduleRef = useRef<HTMLInputElement | null>(null);
+  const addressLine1Ref = useRef<HTMLInputElement | null>(null);
+  const pincodeRef = useRef<HTMLInputElement | null>(null);
 
   const isExistingCustomer = activeCustomerId > 0;
+  const showAlert = (message: string) => setDialogMessage(message);
+  const gstPattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
   const resetForm = () => {
     setMobile("");
@@ -74,6 +90,43 @@ const LeadCreate = () => {
       whatsappNo: "",
       emailId: "",
     });
+    setFieldErrors({});
+    setNewCustomerNotice("");
+  };
+
+  const setErrorAndFocus = (field: string, message: string, ref?: RefObject<HTMLInputElement | HTMLSelectElement | null>) => {
+    setFieldErrors((prev) => ({ ...prev, [field]: message }));
+    ref?.current?.focus();
+  };
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const fetchPostalDetails = async (pincode: string) => {
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await res.json();
+      const first = Array.isArray(data) ? data[0] : null;
+      const postOffice = first?.PostOffice?.[0];
+      if (!postOffice) {
+        return;
+      }
+      const city = postOffice.District ?? postOffice.Block ?? postOffice.Name ?? "";
+      const state = postOffice.State ?? "";
+      setAddressForm((prev) => ({
+        ...prev,
+        city: city || prev.city,
+        state: state || prev.state,
+      }));
+    } catch (error) {
+      console.error("Pincode lookup failed", error);
+    }
   };
 
   const resolveAddressLatLng = (address: any) => {
@@ -87,17 +140,22 @@ const LeadCreate = () => {
   };
 
   const handleMobileSearch = async () => {
-    if (!mobile.trim()) {
-      alert("Enter mobile number");
+    const enteredMobile = mobile.trim();
+    if (!enteredMobile) {
+      setErrorAndFocus("mobile", "Mobile number is required", mobileRef);
       return;
     }
+    clearFieldError("mobile");
+    setNewCustomerNotice("");
 
     setHasSearched(true);
     setSelectedAddressId(0);
     setDraftAddress(null);
 
     try {
-      const data = await fetchCustomerByMobile(mobile.trim());
+      setLoaderMessage("Searching customer...");
+      setLoading(true);
+      const data = await fetchCustomerByMobile(enteredMobile);
 
       if (data && !data.IsNewCustomer) {
         const customerId = Number(data.CustomerId ?? data.customerId ?? 0);
@@ -113,6 +171,7 @@ const LeadCreate = () => {
           emailId: data.emailId ?? data.EmailId ?? "",
         });
         setLatLng(null);
+        setNewCustomerNotice("");
         return;
       }
 
@@ -124,12 +183,15 @@ const LeadCreate = () => {
         ...prev,
         customerName: "",
         customerGST: "",
-        whatsappNo: prev.whatsappNo || mobile,
+        whatsappNo: prev.whatsappNo || enteredMobile,
       }));
-      alert("New customer detected. Add address in popup.");
+      setNewCustomerNotice("New customer detected. Add customer details and address.");
     } catch (error) {
       console.error("Customer search failed", error);
-      alert("Unable to search customer right now");
+      showAlert("Unable to search customer right now");
+    } finally {
+      setLoading(false);
+      setLoaderMessage("");
     }
   };
 
@@ -161,6 +223,18 @@ const LeadCreate = () => {
     field: keyof CreateCustomerAddressRequest,
     value: string | number | boolean | null
   ) => {
+    if (field === "pincode" && typeof value === "string") {
+      const onlyDigits = value.replace(/\D/g, "").slice(0, 6);
+      setAddressForm((prev) => ({
+        ...prev,
+        [field]: onlyDigits,
+      }));
+      clearFieldError("addressPincode");
+      if (onlyDigits.length === 6) {
+        void fetchPostalDetails(onlyDigits);
+      }
+      return;
+    }
     setAddressForm((prev) => ({
       ...prev,
       [field]: value,
@@ -170,7 +244,11 @@ const LeadCreate = () => {
   const handleAddressMapExtract = () => {
     const result = extractLatLng(addressMapLink);
     if (!result) {
-      alert("Invalid Google Map link");
+      if (addressMapLink.includes("maps.app.goo.gl")) {
+        showAlert("Short Google Maps links cannot be parsed directly. Open the link, copy the expanded URL with @lat,lng or q=lat,lng, then paste here.");
+      } else {
+        showAlert("Unable to extract coordinates. Use a Google Maps URL containing @lat,lng or q=lat,lng.");
+      }
       return;
     }
 
@@ -179,13 +257,32 @@ const LeadCreate = () => {
   };
 
   const handleSaveAddress = async () => {
+    const errors: Record<string, string> = {};
     if (!addressForm.addressLine1?.trim()) {
-      alert("AddressLine1 is required");
-      return;
+      errors.addressLine1 = "AddressLine1 is required";
     }
 
     if (!isExistingCustomer && !customerForm.customerName.trim()) {
-      alert("CustomerName is required for new customer");
+      errors.customerName = "CustomerName is required";
+    }
+    if (addressForm.pincode && addressForm.pincode.length !== 6) {
+      errors.addressPincode = "Pincode must be 6 digits";
+    }
+    if (customerForm.customerGST.trim() && !gstPattern.test(customerForm.customerGST.trim().toUpperCase())) {
+      errors.customerGST = "Invalid GST format";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...errors }));
+      if (errors.customerName) {
+        customerNameRef.current?.focus();
+      } else if (errors.customerGST) {
+        customerGstRef.current?.focus();
+      } else if (errors.addressLine1) {
+        addressLine1Ref.current?.focus();
+      } else if (errors.addressPincode) {
+        pincodeRef.current?.focus();
+      }
       return;
     }
 
@@ -200,22 +297,44 @@ const LeadCreate = () => {
       setLatLng(null);
     }
     setShowAddressModal(false);
-    alert("Address saved in draft");
   };
 
   const handleCreateLead = async () => {
+    const errors: Record<string, string> = {};
     if (!mobile.trim()) {
-      alert("Customer mobile number is required");
-      return;
+      errors.mobile = "Customer mobile number is required";
     }
-
     if (!serviceTypeId) {
-      alert("Select service type");
-      return;
+      errors.serviceTypeId = "Select service type";
     }
-
     if (!scheduledDateTime) {
-      alert("Select schedule date and time");
+      errors.scheduledDateTime = "Select schedule date and time";
+    }
+    if (!isExistingCustomer && !customerForm.customerName.trim()) {
+      errors.customerName = "Customer name is required";
+    }
+    if (customerForm.customerGST.trim() && !gstPattern.test(customerForm.customerGST.trim().toUpperCase())) {
+      errors.customerGST = "Invalid GST format";
+    }
+    if (isExistingCustomer && !draftAddress && !selectedAddressId) {
+      errors.selectedAddressId = "Select an address or add new address";
+    }
+    if (!isExistingCustomer && !draftAddress) {
+      errors.draftAddress = "Add address details";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...errors }));
+      if (errors.mobile) {
+        mobileRef.current?.focus();
+      } else if (errors.customerName) {
+        customerNameRef.current?.focus();
+      } else if (errors.customerGST) {
+        customerGstRef.current?.focus();
+      } else if (errors.serviceTypeId) {
+        serviceTypeRef.current?.focus();
+      } else if (errors.scheduledDateTime) {
+        scheduleRef.current?.focus();
+      }
       return;
     }
 
@@ -243,12 +362,9 @@ const LeadCreate = () => {
             addresse: draftAddress ?? undefined,
           };
 
-    if (isExistingCustomer && !draftAddress && !payload.customerAddressId) {
-      alert("Select an address or add new address");
-      return;
-    }
-
     try {
+      setLoaderMessage("Creating lead...");
+      setLoading(true);
       if (!isExistingCustomer) {
         const address = draftAddress;
         const hasAnyAddressInfo =
@@ -261,7 +377,7 @@ const LeadCreate = () => {
           (address?.latitude != null && address?.longitude != null);
 
         if (!payload.customerName?.trim() || !address || !hasAnyAddressInfo) {
-          alert("For new customer, fill name, mobile and address details");
+          setErrorAndFocus("draftAddress", "Add complete address details");
           return;
         }
       }
@@ -271,7 +387,10 @@ const LeadCreate = () => {
       navigate("/leads");
     } catch (error) {
       console.error("Create lead failed", error);
-      alert("Unable to create lead");
+      showAlert("Unable to create lead");
+    } finally {
+      setLoading(false);
+      setLoaderMessage("");
     }
   };
 
@@ -294,7 +413,7 @@ const LeadCreate = () => {
 
       <div className="form-grid">
         <div className="form-card">
-          <div className="card-header">
+          <div className="card-header customer-card-header">
             <Search size={18} />
             <h3>Customer Details</h3>
           </div>
@@ -302,11 +421,22 @@ const LeadCreate = () => {
             <div className="input-group">
               <label>Customer Mobile Number</label>
               <div className="search-control-group">
-                <input
-                  type="tel"
-                  placeholder="e.g. 9876543210"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  <input
+                    ref={mobileRef}
+                    type="tel"
+                    placeholder="e.g. 9876543210"
+                    value={mobile}
+                    className={fieldErrors.mobile ? "input-error" : ""}
+                    onChange={(e) => {
+                      setMobile(e.target.value);
+                      clearFieldError("mobile");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                      void handleMobileSearch();
+                    }
+                  }}
                 />
                 <button
                   className="btn-secondary search-icon-btn"
@@ -317,11 +447,13 @@ const LeadCreate = () => {
                   <Search size={16} />
                 </button>
               </div>
+              {fieldErrors.mobile && <p className="error-text">{fieldErrors.mobile}</p>}
             </div>
 
             {hasSearched && (
               <div className="customer-info">
                 <h4>{isExistingCustomer ? customer?.customerName ?? customer?.CustomerName : "New customer"}</h4>
+                {!isExistingCustomer && newCustomerNotice && <p className="new-customer-note">{newCustomerNotice}</p>}
 
                 {isExistingCustomer ? (
                   <p className="help-text">Customer Name: {customerForm.customerName || "-"}</p>
@@ -330,18 +462,36 @@ const LeadCreate = () => {
                     <div className="input-group">
                       <label>Customer Name</label>
                       <input
+                        ref={customerNameRef}
                         value={customerForm.customerName}
-                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }))}
+                        className={fieldErrors.customerName ? "input-error" : ""}
+                        onChange={(e) => {
+                          setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }));
+                          clearFieldError("customerName");
+                        }}
                         placeholder="Enter customer name"
                       />
+                      {fieldErrors.customerName && <p className="error-text">{fieldErrors.customerName}</p>}
                     </div>
                     <div className="input-group">
                       <label>CustomerGST</label>
                       <input
+                        ref={customerGstRef}
                         value={customerForm.customerGST}
-                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerGST: e.target.value }))}
+                        className={fieldErrors.customerGST ? "input-error" : ""}
+                        onChange={(e) => {
+                          const upper = e.target.value.toUpperCase();
+                          setCustomerForm((prev) => ({ ...prev, customerGST: upper }));
+                          clearFieldError("customerGST");
+                        }}
+                        onBlur={() => {
+                          if (customerForm.customerGST.trim() && !gstPattern.test(customerForm.customerGST.trim().toUpperCase())) {
+                            setFieldErrors((prev) => ({ ...prev, customerGST: "Invalid GST format" }));
+                          }
+                        }}
                         placeholder="Enter GST number"
                       />
+                      {fieldErrors.customerGST && <p className="error-text">{fieldErrors.customerGST}</p>}
                     </div>
                   </div>
                 )}
@@ -349,7 +499,14 @@ const LeadCreate = () => {
                 {isExistingCustomer && addresses.length > 0 && (
                   <div className="input-group">
                     <label>Select Address</label>
-                    <select value={selectedAddressId || ""} onChange={(e) => handleAddressSelect(e.target.value)}>
+                    <select
+                      className={fieldErrors.selectedAddressId ? "input-error" : ""}
+                      value={selectedAddressId || ""}
+                      onChange={(e) => {
+                        handleAddressSelect(e.target.value);
+                        clearFieldError("selectedAddressId");
+                      }}
+                    >
                       <option value="">Choose an address...</option>
                       {addresses.map((a) => {
                         const id = a.CustomerAddressId ?? a.customerAddressId;
@@ -360,6 +517,7 @@ const LeadCreate = () => {
                         );
                       })}
                     </select>
+                    {fieldErrors.selectedAddressId && <p className="error-text">{fieldErrors.selectedAddressId}</p>}
                   </div>
                 )}
 
@@ -390,34 +548,50 @@ const LeadCreate = () => {
                 <button className="btn-outline add-address-btn" onClick={openAddressModal}>
                   + Add New Address
                 </button>
+                {fieldErrors.draftAddress && <p className="error-text">{fieldErrors.draftAddress}</p>}
               </div>
             )}
           </div>
         </div>
 
         <div className="form-card">
-          <div className="card-header">
+          <div className="card-header service-card-header">
             <PlusCircle size={18} />
             <h3>Service Details</h3>
           </div>
           <div className="card-body">
             <div className="input-group">
               <label>Select Service Type</label>
-              <select value={serviceTypeId || ""} onChange={(e) => setServiceTypeId(Number(e.target.value))}>
+              <select
+                ref={serviceTypeRef}
+                className={fieldErrors.serviceTypeId ? "input-error" : ""}
+                value={serviceTypeId || ""}
+                onChange={(e) => {
+                  setServiceTypeId(Number(e.target.value));
+                  clearFieldError("serviceTypeId");
+                }}
+              >
                 <option value="">Choose a service...</option>
                 <option value={1}>AC Installation</option>
                 <option value={2}>AC Servicing</option>
                 <option value={3}>Gas Filling</option>
               </select>
+              {fieldErrors.serviceTypeId && <p className="error-text">{fieldErrors.serviceTypeId}</p>}
             </div>
 
             <div className="input-group">
               <label>Schedule Date & Time</label>
               <input
+                ref={scheduleRef}
+                className={fieldErrors.scheduledDateTime ? "input-error" : ""}
                 type="datetime-local"
                 value={scheduledDateTime}
-                onChange={(e) => setScheduledDateTime(e.target.value)}
+                onChange={(e) => {
+                  setScheduledDateTime(e.target.value);
+                  clearFieldError("scheduledDateTime");
+                }}
               />
+              {fieldErrors.scheduledDateTime && <p className="error-text">{fieldErrors.scheduledDateTime}</p>}
             </div>
 
             <div className="input-group">
@@ -430,11 +604,22 @@ const LeadCreate = () => {
                 rows={4}
               />
             </div>
+
+            <div className="service-actions">
+              <button className="btn-outline clear-form-btn" onClick={resetForm}>
+                <Eraser size={16} />
+                Clear
+              </button>
+              <button className="btn-primary create-lead-btn" onClick={handleCreateLead}>
+                <Send size={16} />
+                Create Lead
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="form-card full-width">
-          <div className="card-header">
+          <div className="card-header location-card-header">
             <MapPin size={18} />
             <h3>Location Information</h3>
           </div>
@@ -456,17 +641,6 @@ const LeadCreate = () => {
         </div>
       </div>
 
-      <div className="page-actions">
-        <button className="btn-outline clear-form-btn" onClick={resetForm}>
-          <Eraser size={16} />
-          Clear
-        </button>
-        <button className="btn-primary create-lead-btn" onClick={handleCreateLead}>
-          <Send size={16} />
-          Create Lead
-        </button>
-      </div>
-
       {showAddressModal && (
         <div className="modal-overlay">
           <div className="modal-card">
@@ -486,18 +660,36 @@ const LeadCreate = () => {
                     <div className="input-group">
                       <label>CustomerName</label>
                       <input
+                        ref={customerNameRef}
+                        className={fieldErrors.customerName ? "input-error" : ""}
                         value={customerForm.customerName}
-                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }))}
+                        onChange={(e) => {
+                          setCustomerForm((prev) => ({ ...prev, customerName: e.target.value }));
+                          clearFieldError("customerName");
+                        }}
                         placeholder="Customer name"
                       />
+                      {fieldErrors.customerName && <p className="error-text">{fieldErrors.customerName}</p>}
                     </div>
                     <div className="input-group">
                       <label>CustomerGST</label>
                       <input
+                        ref={customerGstRef}
+                        className={fieldErrors.customerGST ? "input-error" : ""}
                         value={customerForm.customerGST}
-                        onChange={(e) => setCustomerForm((prev) => ({ ...prev, customerGST: e.target.value }))}
+                        onChange={(e) => {
+                          const upper = e.target.value.toUpperCase();
+                          setCustomerForm((prev) => ({ ...prev, customerGST: upper }));
+                          clearFieldError("customerGST");
+                        }}
+                        onBlur={() => {
+                          if (customerForm.customerGST.trim() && !gstPattern.test(customerForm.customerGST.trim().toUpperCase())) {
+                            setFieldErrors((prev) => ({ ...prev, customerGST: "Invalid GST format" }));
+                          }
+                        }}
                         placeholder="GST number"
                       />
+                      {fieldErrors.customerGST && <p className="error-text">{fieldErrors.customerGST}</p>}
                     </div>
                   </div>
                 )}
@@ -533,11 +725,29 @@ const LeadCreate = () => {
 
               <div className="modal-grid">
                 <div className="input-group">
+                  <label>Pincode</label>
+                  <input
+                    ref={pincodeRef}
+                    className={fieldErrors.addressPincode ? "input-error" : ""}
+                    value={addressForm.pincode ?? ""}
+                    onChange={(e) => handleAddressFormChange("pincode", e.target.value)}
+                    inputMode="numeric"
+                    maxLength={6}
+                  />
+                  {fieldErrors.addressPincode && <p className="error-text">{fieldErrors.addressPincode}</p>}
+                </div>
+                <div className="input-group">
                   <label>AddressLine1</label>
                   <input
+                    ref={addressLine1Ref}
+                    className={fieldErrors.addressLine1 ? "input-error" : ""}
                     value={addressForm.addressLine1 ?? ""}
-                    onChange={(e) => handleAddressFormChange("addressLine1", e.target.value)}
+                    onChange={(e) => {
+                      handleAddressFormChange("addressLine1", e.target.value);
+                      clearFieldError("addressLine1");
+                    }}
                   />
+                  {fieldErrors.addressLine1 && <p className="error-text">{fieldErrors.addressLine1}</p>}
                 </div>
                 <div className="input-group">
                   <label>Area</label>
@@ -550,13 +760,6 @@ const LeadCreate = () => {
                 <div className="input-group">
                   <label>State</label>
                   <input value={addressForm.state ?? ""} onChange={(e) => handleAddressFormChange("state", e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label>Pincode</label>
-                  <input
-                    value={addressForm.pincode ?? ""}
-                    onChange={(e) => handleAddressFormChange("pincode", e.target.value)}
-                  />
                 </div>
                 <div className="input-group full-span">
                   <label>Google Maps Link</label>
@@ -612,6 +815,17 @@ const LeadCreate = () => {
           </div>
         </div>
       )}
+
+      <AppDialog
+        open={Boolean(dialogMessage)}
+        title="Create Lead"
+        message={dialogMessage}
+        mode="alert"
+        onConfirm={() => setDialogMessage("")}
+        onClose={() => setDialogMessage("")}
+      />
+
+      <AppLoader open={loading} message={loaderMessage || "Please wait..."} />
     </div>
   );
 };

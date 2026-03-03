@@ -1,0 +1,45 @@
+.app-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1500;
+  padding: 16px;
+}
+
+.app-loader-card {
+  width: min(320px, 100%);
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+  padding: 18px 16px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.app-loader-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6a11cb;
+  border-right-color: #5b6cff;
+  animation: app-loader-spin 0.9s linear infinite;
+}
+
+.app-loader-card p {
+  margin: 0;
+  color: #334155;
+  font-weight: 700;
+}
+
+@keyframes app-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

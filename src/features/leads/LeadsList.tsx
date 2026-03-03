@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Phone, Search } from "lucide-react";
+import { MapPin, Phone, Search, Wrench } from "lucide-react";
 import api from "../../api/axios";
+import AppDialog from "../../components/AppDialog";
 import "./LeadsList.css";
 
 const LeadsList = () => {
@@ -27,9 +28,24 @@ const LeadsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleCount, setVisibleCount] = useState(10);
   const [loading, setLoading] = useState(false);
+  const [dialogState, setDialogState] = useState<{
+    title: string;
+    message: string;
+    mode: "alert" | "confirm";
+    confirmText?: string;
+    onConfirm?: () => void;
+  } | null>(null);
   const navigate = useNavigate();
 
-  const getField = (lead: any, keys: string[], fallback = "-") => {
+  const showAlert = (message: string, title = "Leads") => {
+    setDialogState({ title, message, mode: "alert" });
+  };
+
+  const showConfirm = (message: string, onConfirm: () => void, title = "Confirm", confirmText = "Yes") => {
+    setDialogState({ title, message, mode: "confirm", confirmText, onConfirm });
+  };
+
+  const getField = (lead: any, keys: string[], fallback: any = "-"): any => {
     for (const key of keys) {
       if (lead?.[key] !== undefined && lead?.[key] !== null && `${lead[key]}`.trim() !== "") {
         return lead[key];
@@ -149,6 +165,7 @@ const LeadsList = () => {
       getField(lead, ["CustomerName", "customerName"], ""),
       getField(lead, ["MobileNo", "mobileNo"], ""),
       getField(lead, ["StatusName", "LeadStatus", "statusName"], ""),
+      getField(lead, ["ServiceName", "serviceName"], ""),
       getField(lead, ["AddressType", "addressType"], ""),
       getField(lead, ["Area", "area"], ""),
       getField(lead, ["Pincode", "pincode"], ""),
@@ -262,7 +279,7 @@ const LeadsList = () => {
       convertSchedulePeriod
     );
     if (!scheduledOn) {
-      alert("Select Scheduled On date and time");
+      showAlert("Select Scheduled On date and time", "Convert to Job");
       return;
     }
     setCreatingJob(true);
@@ -282,7 +299,7 @@ const LeadsList = () => {
       await refreshCards();
     } catch (error) {
       console.error("Create job failed", error);
-      alert("Unable to create job");
+      showAlert("Unable to create job", "Convert to Job");
     } finally {
       setCreatingJob(false);
     }
@@ -305,22 +322,17 @@ const LeadsList = () => {
       setAssignSchedulePeriod(parsed.period);
     } catch (error) {
       console.error("Unable to fetch job info", error);
-      alert("Unable to load job information");
+      showAlert("Unable to load job information", "Job Info");
     } finally {
       setLoadingJobInfo(false);
     }
   };
 
-  const handleAssignTechnician = async (value: string) => {
+  const updateJobAssignment = async () => {
     if (!selectedJob?.JobId) {
       return;
     }
-    const confirmAssign = window.confirm(
-      "Assigned technician will be updated. Do you want to continue?"
-    );
-    if (!confirmAssign) {
-      return;
-    }
+
     const scheduledOn = buildScheduleIso(
       assignScheduleDate,
       assignScheduleHour,
@@ -328,27 +340,27 @@ const LeadsList = () => {
       assignSchedulePeriod
     );
     if (!scheduledOn) {
-      alert("Select Scheduled On date and time");
+      showAlert("Select Scheduled On date and time", "Assign Technician");
       return;
     }
-    setAssignTechId(value);
+
     setSavingAssignment(true);
     try {
       await api.post("/jobs/assign", {
         JobId: selectedJob.JobId,
-        TechnicianId: value ? Number(value) : null,
+        TechnicianId: assignTechId ? Number(assignTechId) : null,
         ScheduledOn: scheduledOn,
       });
     } catch (error) {
       console.error("Unable to assign technician", error);
-      alert("Unable to assign technician");
+      showAlert("Unable to assign technician", "Assign Technician");
     } finally {
       setSavingAssignment(false);
     }
   };
 
   const openConvertPopup = (lead: any) => {
-    const leadId = Number(getField(lead, ["LeadId", "leadId"], 0));
+    const leadId = Number(getField(lead, ["LeadId", "leadId"], "0"));
     const assignedTech = getField(lead, ["AssignedTechnicianId", "assignedTechnicianId"], "");
     const assignedTechNum = Number(assignedTech);
     const parsed = parseScheduleTo12H(getField(lead, ["ScheduledOn", "scheduledOn"], ""));
@@ -432,11 +444,13 @@ const LeadsList = () => {
                 const statusName = getField(lead, ["StatusName", "LeadStatus", "statusName"]);
                 const jobIdRaw = getField(lead, ["JobId", "jobId"], "0");
                 const jobNumber = getField(lead, ["JobNumber", "jobNumber"], "");
+                const serviceName = getField(lead, ["ServiceName", "serviceName"]);
+                const technicianName = getField(lead, ["TechnicianName", "technicianName"], "");
                 const addressType = getField(lead, ["AddressType", "addressType"]);
                 const area = getField(lead, ["Area", "area"]);
                 const pincode = getField(lead, ["Pincode", "pincode"]);
                 const scheduledOn = formatDate(getField(lead, ["ScheduledOn", "scheduledOn"], ""));
-                const numericLeadId = Number(getField(lead, ["LeadId", "leadId"], 0));
+                const numericLeadId = Number(getField(lead, ["LeadId", "leadId"], "0"));
                 const numericJobId = Number(jobIdRaw);
                 const hasJobId = Number.isFinite(numericJobId) && numericJobId > 0;
                 const statusVariant = getStatusVariant(statusName);
@@ -453,11 +467,15 @@ const LeadsList = () => {
 
                     <div className="lead-meta-grid">
                       <p>
+                        <Wrench size={14} /> {serviceName}
+                      </p>
+                      <p>
                         <Phone size={14} /> {mobileNo}
                       </p>
                       <p>
                         <MapPin size={14} /> {addressType}, {area} - {pincode}
                       </p>
+                      {technicianName && technicianName !== "-" && <p>Technician: {technicianName}</p>}
                       <p>Scheduled: {scheduledOn}</p>
                     </div>
 
@@ -474,16 +492,19 @@ const LeadsList = () => {
                       {!hasJobId && (
                         <button
                           className="card-btn card-btn-danger"
-                          onClick={async () => {
-                            const ok = window.confirm("Are you sure you want to cancel this lead?");
-                            if (!ok || !numericLeadId) return;
-                            try {
-                              await api.post(`/leads/cancel/${numericLeadId}`);
-                              await refreshCards();
-                            } catch (error) {
-                              console.error("Cancel lead failed", error);
-                              alert("Unable to cancel lead");
-                            }
+                          onClick={() => {
+                            if (!numericLeadId) return;
+                            showConfirm("Are you sure you want to cancel this lead?", () => {
+                              void (async () => {
+                                try {
+                                  await api.post(`/leads/cancel/${numericLeadId}`);
+                                  await refreshCards();
+                                } catch (error) {
+                                  console.error("Cancel lead failed", error);
+                                  showAlert("Unable to cancel lead", "Cancel Lead");
+                                }
+                              })();
+                            }, "Cancel Lead", "Yes, Cancel");
                           }}
                           disabled={!numericLeadId || statusVariant === "cancelled"}
                         >
@@ -498,7 +519,7 @@ const LeadsList = () => {
                           className="card-btn card-btn-success"
                           onClick={() => openJobInfo(numericJobId)}
                         >
-                          {jobNumber ? `View Job ${jobNumber}` : "View Job"}
+                          {jobNumber ? `${jobNumber}` : "View Job"}
                         </button>
                       )}
                     </div>
@@ -545,6 +566,10 @@ const LeadsList = () => {
             </div>
 
             <div className="job-info-grid">
+              <div className="job-info-card">
+                <p className="info-label">Service</p>
+                <p className="info-value">{getField(selectedLead, ["ServiceName", "serviceName"])}</p>
+              </div>
               <div className="job-info-card">
                 <p className="info-label">Lead Date</p>
                 <p className="info-value">{formatDate(getField(selectedLead, ["LeadDate", "leadDate"], ""))}</p>
@@ -662,11 +687,11 @@ const LeadsList = () => {
                 </div>
               </div>
               <div className="job-info-card full-span-tech">
-                <p className="info-label">Technicians</p>
+                <p className="info-label">Assigned To</p>
                 <select
                   className="tech-select"
                   value={assignTechId}
-                  onChange={(e) => handleAssignTechnician(e.target.value)}
+                  onChange={(e) => setAssignTechId(e.target.value)}
                   disabled={savingAssignment}
                 >
                   <option value="">Unassigned</option>
@@ -680,6 +705,13 @@ const LeadsList = () => {
                     );
                   })}
                 </select>
+                <button
+                  className="card-btn card-btn-primary update-job-btn"
+                  onClick={() => void updateJobAssignment()}
+                  disabled={savingAssignment}
+                >
+                  {savingAssignment ? "Updating..." : "Update Job"}
+                </button>
                 {savingAssignment && <p className="job-subtext">Saving technician assignment...</p>}
               </div>
             </div>
@@ -781,6 +813,20 @@ const LeadsList = () => {
           </div>
         </div>
       )}
+
+      <AppDialog
+        open={Boolean(dialogState)}
+        title={dialogState?.title ?? "Info"}
+        message={dialogState?.message ?? ""}
+        mode={dialogState?.mode ?? "alert"}
+        confirmText={dialogState?.confirmText ?? (dialogState?.mode === "confirm" ? "Yes" : "OK")}
+        onClose={() => setDialogState(null)}
+        onConfirm={() => {
+          const action = dialogState?.onConfirm;
+          setDialogState(null);
+          action?.();
+        }}
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, Phone, Search, Wrench } from "lucide-react";
 import api from "../../api/axios";
+import AppDialog from "../../components/AppDialog";
 import "./JobsList.css";
 
 const JobsList = () => {
@@ -16,11 +17,23 @@ const JobsList = () => {
   const [assignScheduleMinute, setAssignScheduleMinute] = useState("");
   const [assignSchedulePeriod, setAssignSchedulePeriod] = useState<"AM" | "PM">("AM");
   const [savingAssignment, setSavingAssignment] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
+  const [paymentJob, setPaymentJob] = useState<any | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentRefNumber, setPaymentRefNumber] = useState("");
+  const [paymentMode, setPaymentMode] = useState("");
+  const [paymentRemarks, setPaymentRemarks] = useState("");
+  const [paymentDateTime, setPaymentDateTime] = useState("");
+  const [savingPayment, setSavingPayment] = useState(false);
+  const focusJobIdRef = useRef<number | null>(null);
+
+  const showAlert = (message: string) => setDialogMessage(message);
 
   const hourOptions = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
   const minuteOptions = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
 
-  const getField = (item: any, keys: string[], fallback = "-") => {
+  const getField = (item: any, keys: string[], fallback: any = "-"): any => {
     for (const key of keys) {
       const value = item?.[key];
       if (value !== undefined && value !== null && `${value}`.trim() !== "") {
@@ -46,7 +59,12 @@ const JobsList = () => {
     if (!Number.isFinite(amount)) {
       return "-";
     }
-    return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount.toLocaleString("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   const getStatusVariant = (status: unknown) => {
@@ -203,14 +221,16 @@ const JobsList = () => {
     return match ? getTechnicianName(match) : `Technician #${assignedId}`;
   };
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (preserveVisibleCount = false) => {
     setLoading(true);
     try {
       const res = await api.get("/jobs/GetMyJobs");
       const data = res.data;
       const items = Array.isArray(data) ? data : data?.items ?? data?.data ?? data?.jobs ?? [];
       setAllJobs(items);
-      setVisibleCount(10);
+      if (!preserveVisibleCount) {
+        setVisibleCount(10);
+      }
     } finally {
       setLoading(false);
     }
@@ -283,7 +303,7 @@ const JobsList = () => {
       assignSchedulePeriod
     );
     if (!scheduledOn) {
-      alert("Select scheduled date and time");
+      showAlert("Select scheduled date and time");
       return;
     }
     setSavingAssignment(true);
@@ -305,9 +325,76 @@ const JobsList = () => {
       await fetchJobs();
     } catch (error) {
       console.error("Unable to update assignment", error);
-      alert("Unable to update assignment");
+      showAlert("Unable to update assignment");
     } finally {
       setSavingAssignment(false);
+    }
+  };
+
+  const openPaymentPopup = (job: any) => {
+    const now = new Date();
+    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setPaymentJob(job);
+    setPaymentAmount("");
+    setPaymentRefNumber("");
+    setPaymentMode("");
+    setPaymentRemarks("");
+    setPaymentDateTime(localNow);
+    setShowPaymentPopup(true);
+  };
+
+  const submitPayment = async () => {
+    const jobId = Number(getField(paymentJob, ["JobId", "jobId"], "0"));
+    const amount = Number(paymentAmount);
+
+    if (!jobId) {
+      showAlert("Invalid job selected");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showAlert("Enter a valid amount");
+      return;
+    }
+    if (!paymentMode.trim()) {
+      showAlert("Select payment mode");
+      return;
+    }
+    if (!paymentDateTime) {
+      showAlert("Select payment date and time");
+      return;
+    }
+
+    setSavingPayment(true);
+    try {
+      await api.post("/jobs/payment", {
+        JobId: jobId,
+        Amount: amount,
+        RefNumber: paymentRefNumber.trim(),
+        PaymentMode: paymentMode.trim(),
+        Remarks: paymentRemarks.trim(),
+        PaymentDate: new Date(paymentDateTime).toISOString(),
+      });
+      focusJobIdRef.current = jobId;
+      setShowPaymentPopup(false);
+      setPaymentJob(null);
+      await fetchJobs(true);
+      window.requestAnimationFrame(() => {
+        const focusId = focusJobIdRef.current;
+        if (!focusId) return;
+        const card = document.querySelector(`[data-job-id="${focusId}"]`) as HTMLElement | null;
+        if (card) {
+          card.scrollIntoView({ behavior: "auto", block: "center" });
+        }
+        focusJobIdRef.current = null;
+      });
+      showAlert("Payment added successfully");
+    } catch (error) {
+      console.error("Unable to add payment", error);
+      showAlert("Unable to add payment");
+    } finally {
+      setSavingPayment(false);
     }
   };
 
@@ -350,11 +437,18 @@ const JobsList = () => {
                 const address = getField(job, ["Address", "address"]);
                 const status = getField(job, ["JobStatus", "jobStatus"]);
                 const assignedTech = Number(getField(job, ["AssignedTechnicianId", "assignedTechnicianId"], 0));
+                const invoiceNumber = getField(job, ["InvoiceNumber", "invoiceNumber"], "");
+                const dueAmount = getField(job, ["DueAmount", "dueAmount"], 0);
+                const totalPayableAmount = getField(job, ["TotalPayableAmount", "totalPayableAmount"], 0);
                 const scheduledOn = formatDate(getField(job, ["ScheduledOn", "scheduledOn"], ""));
                 const statusVariant = getStatusVariant(status);
 
                 return (
-                  <article className={`lead-card lead-card-${statusVariant}`} key={`${jobId}-${jobNumber}`}>
+                  <article
+                    className={`lead-card lead-card-${statusVariant}`}
+                    key={`${jobId}-${jobNumber}`}
+                    data-job-id={jobId}
+                  >
                     <div className="lead-card-top">
                       <div>
                         <p className="lead-label">Job #{jobNumber}</p>
@@ -375,9 +469,29 @@ const JobsList = () => {
                       </p>
                       <p>Scheduled: {scheduledOn}</p>
                       <p>Technician: {findTechnicianName(assignedTech)}</p>
+                      {invoiceNumber && invoiceNumber !== "-" && (
+                        <p>
+                          Invoice:
+                          <span className="invoice-chip">{invoiceNumber}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="job-finance-strip">
+                      <div className="amount-pill amount-pill-due">
+                        <span className="amount-label">Due</span>
+                        <strong>{formatCurrency(dueAmount)}</strong>
+                      </div>
+                      <div className="amount-pill amount-pill-payable">
+                        <span className="amount-label">Total Payable</span>
+                        <strong>{formatCurrency(totalPayableAmount)}</strong>
+                      </div>
                     </div>
 
                     <div className="card-actions">
+                      <button className="card-btn card-btn-success" onClick={() => openPaymentPopup(job)}>
+                        Add Payment
+                      </button>
                       <button className="card-btn card-btn-outline" onClick={() => openMoreInfo(job)}>
                         More Info
                       </button>
@@ -450,6 +564,12 @@ const JobsList = () => {
                 <p className="info-label">Current Action</p>
                 <p className="info-value">{getField(selectedJob, ["CurrentButtion", "currentButtion"])}</p>
               </div>
+              <div className="job-info-card">
+                <p className="info-label">Invoice Number</p>
+                <p className="info-value">
+                  {getField(selectedJob, ["InvoiceNumber", "invoiceNumber"], "-")}
+                </p>
+              </div>
               <div className="job-info-card full-span-tech">
                 <p className="info-label">Scheduled On (Editable)</p>
                 <div className="schedule-inline-grid">
@@ -511,6 +631,94 @@ const JobsList = () => {
           </div>
         </div>
       )}
+
+      {showPaymentPopup && (
+        <div className="details-overlay">
+          <div className="details-card convert-job-card">
+            <div className="details-header">
+              <h3>Add Payment</h3>
+              <button className="details-close-btn" onClick={() => setShowPaymentPopup(false)} aria-label="Close payment popup">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="convert-body">
+              <p className="job-subtext">
+                Job: {getField(paymentJob, ["JobNumber", "jobNumber"], "-")}
+              </p>
+              {getField(paymentJob, ["InvoiceNumber", "invoiceNumber"], "") !== "-" &&
+                getField(paymentJob, ["InvoiceNumber", "invoiceNumber"], "") && (
+                  <p className="job-subtext">
+                    Invoice: <span className="invoice-chip">{getField(paymentJob, ["InvoiceNumber", "invoiceNumber"])}</span>
+                  </p>
+                )}
+              <div className="input-block">
+                <label>Amount</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="Enter amount"
+                />
+              </div>
+              <div className="input-block">
+                <label>Reference Number</label>
+                <input
+                  type="text"
+                  value={paymentRefNumber}
+                  onChange={(e) => setPaymentRefNumber(e.target.value)}
+                  placeholder="Enter reference number"
+                />
+              </div>
+              <div className="input-block">
+                <label>Payment Mode</label>
+                <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
+                  <option value="">Select payment mode</option>
+                  <option value="CASH">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="CARD">Card</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                </select>
+              </div>
+              <div className="input-block">
+                <label>Payment Date</label>
+                <input
+                  type="datetime-local"
+                  value={paymentDateTime}
+                  onChange={(e) => setPaymentDateTime(e.target.value)}
+                />
+              </div>
+              <div className="input-block">
+                <label>Remarks</label>
+                <textarea
+                  rows={3}
+                  value={paymentRemarks}
+                  onChange={(e) => setPaymentRemarks(e.target.value)}
+                  placeholder="Optional remarks"
+                />
+              </div>
+            </div>
+            <div className="convert-actions">
+              <button className="card-btn card-btn-outline" onClick={() => setShowPaymentPopup(false)}>
+                Cancel
+              </button>
+              <button className="card-btn card-btn-primary" onClick={submitPayment} disabled={savingPayment}>
+                {savingPayment ? "Submitting..." : "Submit Payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AppDialog
+        open={Boolean(dialogMessage)}
+        title="My Jobs"
+        message={dialogMessage}
+        mode="alert"
+        onConfirm={() => setDialogMessage("")}
+        onClose={() => setDialogMessage("")}
+      />
     </div>
   );
 };
