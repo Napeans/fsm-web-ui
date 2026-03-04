@@ -1,0 +1,264 @@
+.admin-dashboard-page {
+  display: grid;
+  gap: 16px;
+  color: #0f172a;
+}
+
+.dashboard-top h2 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-top p {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.dashboard-filter-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-field label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.filter-field input {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  padding: 0 10px;
+  color: #0f172a;
+}
+
+.apply-filter-btn {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #6a11cb;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.apply-filter-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dashboard-error {
+  margin: 0;
+  color: #b91c1c;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.financial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.financial-card {
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.financial-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.bg-indigo {
+  background: #4f46e5;
+}
+
+.bg-blue {
+  background: #0ea5e9;
+}
+
+.bg-red {
+  background: #ef4444;
+}
+
+.financial-card p {
+  margin: 0;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.financial-card h3 {
+  margin: 2px 0 0;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-card {
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.summary-icon-lead {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.summary-icon-job {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.summary-icon-service {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.summary-card span {
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.summary-card strong {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.chart-card {
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.chart-card-header {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e9eef7;
+}
+
+.chart-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.chart-row-list {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-row {
+  display: grid;
+  gap: 5px;
+}
+
+.chart-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chart-label {
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.chart-value {
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.chart-track {
+  height: 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.chart-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.chart-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .financial-grid,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-filter-card {
+    grid-template-columns: 1fr;
+  }
+}

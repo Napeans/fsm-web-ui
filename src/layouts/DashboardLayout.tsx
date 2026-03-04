@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
   UserPlus, 
   ListOrdered,
   BriefcaseBusiness,
@@ -27,9 +27,11 @@ const DashboardLayout = ({ children }: Props) => {
     return window.innerWidth >= 768;
   });
   const navigate = useNavigate();
+  const fullName = localStorage.getItem("fullName")?.trim() || "Admin User";
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("fullName");
     navigate("/");
   };
 
@@ -43,15 +45,15 @@ const DashboardLayout = ({ children }: Props) => {
         <div className="sidebar-top">
           <div className="profile-wrapper">
              <UserCircle size={isSidebarOpen ? 48 : 32} strokeWidth={1.5} />
-             {isSidebarOpen && <span className="profile-name">Admin User</span>}
+             {isSidebarOpen && <span className="profile-name">{fullName}</span>}
           </div>
         </div>
 
         <nav className="sidebar-nav">
-          {/* <NavLink to="/dashboard" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
+          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <LayoutDashboard size={22} />
             {isSidebarOpen && <span>Dashboard</span>}
-          </NavLink> */}
+          </NavLink>
           
           <NavLink to="/lead-create" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <UserPlus size={22} />
@@ -68,10 +70,10 @@ const DashboardLayout = ({ children }: Props) => {
             {isSidebarOpen && <span>My Jobs</span>}
           </NavLink>
           
-          {/* <NavLink to="/users" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
+          <NavLink to="/user-management" className={({ isActive }) => isActive ? "active" : ""} onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}>
             <Users size={22} />
-            {isSidebarOpen && <span>User Manager</span>}
-          </NavLink> */}
+            {isSidebarOpen && <span>User Management</span>}
+          </NavLink>
         </nav>
       </aside>
 

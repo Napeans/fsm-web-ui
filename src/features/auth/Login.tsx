@@ -69,6 +69,12 @@ const Login = () => {
       });
 
       localStorage.setItem("token", res.accessToken);
+      const fullName = (res.FullName ?? res.fullName ?? "").trim();
+      if (fullName) {
+        localStorage.setItem("fullName", fullName);
+      } else {
+        localStorage.removeItem("fullName");
+      }
       window.location.href = "/lead-create";
     } catch {
       showAlert("Invalid login");
