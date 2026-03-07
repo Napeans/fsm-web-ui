@@ -10,15 +10,21 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 const AppRoutes = () => {
+  const token = localStorage.getItem("token");
+
   return (
     <Routes>
       {/* Public Routes */}
       <Route
         path="/"
         element={
-          <AuthLayout>
-            <Login />
-          </AuthLayout>
+          token ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <AuthLayout>
+              <Login />
+            </AuthLayout>
+          )
         }
       />
 
@@ -79,7 +85,7 @@ const AppRoutes = () => {
       />
 
       {/* Default Fallback */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 };

@@ -75,7 +75,7 @@ const Login = () => {
       } else {
         localStorage.removeItem("fullName");
       }
-      window.location.href = "/lead-create";
+      window.location.href = "/dashboard";
     } catch {
       showAlert("Invalid login");
       setPin(["", "", "", ""]);
