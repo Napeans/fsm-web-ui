@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Link } from "react-router-dom";
 import { loginUser } from "./auth.service";
 import logo from "../../assets/img/logo.png";
 import AppDialog from "../../components/AppDialog";
@@ -136,6 +137,11 @@ const Login = () => {
           <button className="btn-primary" onClick={handleLogin} disabled={loggingIn}>
             {loggingIn ? "Signing In..." : "Login"}
           </button>
+
+          <div className="auth-links">
+            <Link to="/register">Register</Link>
+            <Link to="/">Back to Website</Link>
+          </div>
         </div>
       </div>
 

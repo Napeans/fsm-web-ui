@@ -18,6 +18,7 @@ const LeadCreate = () => {
   const [remarks, setRemarks] = useState("");
   const [latLng, setLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchedMobile, setSearchedMobile] = useState("");
   const [activeCustomerId, setActiveCustomerId] = useState<number>(0);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addressMapLink, setAddressMapLink] = useState("");
@@ -133,6 +134,7 @@ const LeadCreate = () => {
     setRemarks("");
     setLatLng(null);
     setHasSearched(false);
+    setSearchedMobile("");
     setActiveCustomerId(0);
     setShowAddressModal(false);
     resetAddressForm();
@@ -182,8 +184,10 @@ const LeadCreate = () => {
     }
 
     clearFieldError("mobile");
+    clearFieldError("mobileSearch");
     setNewCustomerNotice("");
     setHasSearched(true);
+    setSearchedMobile(enteredMobile);
     setSelectedAddressId(0);
 
     try {
@@ -383,9 +387,14 @@ const LeadCreate = () => {
 
   const handleCreateLead = async () => {
     const errors: Record<string, string> = {};
+    const enteredMobile = mobile.trim();
+    const isMobileConfirmed = hasSearched && searchedMobile === enteredMobile;
 
-    if (!/^\d{10}$/.test(mobile.trim())) {
+    if (!/^\d{10}$/.test(enteredMobile)) {
       errors.mobile = "Mobile number must be 10 digits";
+    }
+    if (!isMobileConfirmed) {
+      errors.mobileSearch = "Search customer using this mobile number before creating lead";
     }
     if (!serviceTypeId) {
       errors.serviceTypeId = "Select service type";
@@ -402,7 +411,7 @@ const LeadCreate = () => {
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors((prev) => ({ ...prev, ...errors }));
-      if (errors.mobile) {
+      if (errors.mobile || errors.mobileSearch) {
         mobileRef.current?.focus();
       } else if (errors.serviceTypeId) {
         serviceTypeRef.current?.focus();
@@ -470,8 +479,21 @@ const LeadCreate = () => {
                   maxLength={10}
                   onChange={(e) => {
                     const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    const isChangedAfterSearch = searchedMobile !== "" && onlyDigits !== searchedMobile;
                     setMobile(onlyDigits);
+                    if (isChangedAfterSearch) {
+                      setHasSearched(false);
+                      setCustomer(null);
+                      setAddresses([]);
+                      setSelectedAddressId(0);
+                      setActiveCustomerId(0);
+                      setLatLng(null);
+                      setSavedAddressPreview(null);
+                      setNewCustomerNotice("");
+                    }
                     clearFieldError("mobile");
+                    clearFieldError("mobileSearch");
+                    clearFieldError("customerId");
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -490,6 +512,7 @@ const LeadCreate = () => {
                 </button>
               </div>
               {fieldErrors.mobile && <p className="error-text">{fieldErrors.mobile}</p>}
+              {fieldErrors.mobileSearch && <p className="error-text">{fieldErrors.mobileSearch}</p>}
             </div>
 
             {hasSearched && (

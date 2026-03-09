@@ -1,10 +1,14 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../features/auth/Login";
+import Register from "../features/auth/Register";
 import AdminDashboard from "../features/dashboard/AdminDashboard";
 import LeadCreate from "../features/leads/LeadCreate";
 import LeadsList from "../features/leads/LeadsList";
 import JobsList from "../features/jobs/JobsList";
 import UserManagement from "../features/users/UserManagement";
+import LandingPage from "../features/marketing/LandingPage";
+import PrivacyPolicy from "../features/marketing/PrivacyPolicy";
+import TermsConditions from "../features/marketing/TermsConditions";
 import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -17,6 +21,11 @@ const AppRoutes = () => {
       {/* Public Routes */}
       <Route
         path="/"
+        element={token ? <Navigate to="/dashboard" replace /> : <LandingPage />}
+      />
+
+      <Route
+        path="/login"
         element={
           token ? (
             <Navigate to="/dashboard" replace />
@@ -27,6 +36,22 @@ const AppRoutes = () => {
           )
         }
       />
+
+      <Route
+        path="/register"
+        element={
+          token ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <AuthLayout>
+              <Register />
+            </AuthLayout>
+          )
+        }
+      />
+
+      <Route path="/policy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsConditions />} />
 
       {/* Protected Routes */}
       <Route
@@ -85,7 +110,7 @@ const AppRoutes = () => {
       />
 
       {/* Default Fallback */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to={token ? "/dashboard" : "/"} replace />} />
     </Routes>
   );
 };
