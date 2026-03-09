@@ -1,10 +1,10 @@
 :root {
-  --primary-gradient: linear-gradient(90deg, #5B6CFF, #6A11CB);
-  --primary-purple: #6A11CB;
-  --primary-blue: #5B6CFF;
+  --primary-gradient: linear-gradient(90deg, #5b6cff, #6a11cb);
+  --primary-purple: #6a11cb;
+  --primary-blue: #5b6cff;
   --bg-light: #f4f6f8;
   --card-bg: #ffffff;
-  --text-dark: #222;
+  --text-dark: #1f2937;
 }
 
 /* Primary Gradient Button */
