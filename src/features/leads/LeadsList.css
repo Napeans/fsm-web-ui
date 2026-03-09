@@ -49,6 +49,12 @@
   align-items: center;
   gap: 12px;
 }
+
+.leads-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .new-lead-btn,
 .load-more-btn {
   border: none;
@@ -59,6 +65,10 @@
   cursor: pointer;
   width: auto;
   transition: 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .new-lead-btn,
@@ -662,6 +672,15 @@
 
 @media (max-width: 768px) {
   .new-lead-btn {
+    width: 100%;
+  }
+
+  .leads-header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .leads-header-actions .load-more-btn {
     width: 100%;
   }
 

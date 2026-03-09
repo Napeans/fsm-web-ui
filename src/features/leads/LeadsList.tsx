@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Phone, Search, Wrench } from "lucide-react";
+import { MapPin, Phone, RefreshCw, Search, Wrench } from "lucide-react";
 import api from "../../api/axios";
 import AppDialog from "../../components/AppDialog";
 import "./LeadsList.css";
@@ -234,7 +234,7 @@ const LeadsList = () => {
     return groups;
   };
 
-  const fetchLeads = async () => {
+  const fetchLeads = async (preserveVisibleCount = false) => {
     setLoading(true);
     try {
       const res = await api.get("/leads");
@@ -242,7 +242,9 @@ const LeadsList = () => {
       const data = res.data;
       const items = Array.isArray(data) ? data : data?.items ?? data?.data ?? data?.leads ?? [];
       setAllLeads(items);
-      setVisibleCount(10);
+      if (!preserveVisibleCount) {
+        setVisibleCount(10);
+      }
     } finally {
       setLoading(false);
     }
@@ -265,7 +267,7 @@ const LeadsList = () => {
   }, []);
 
   const refreshCards = async () => {
-    await fetchLeads();
+    await fetchLeads(true);
   };
 
   const createJobFromLead = async () => {
@@ -405,9 +407,14 @@ const LeadsList = () => {
     <div className="leads-page">
       <div className="leads-header">
         <h2>List of Leads</h2>
-        <button className="new-lead-btn" onClick={() => navigate("/lead-create")}>
-          + Create Lead
-        </button>
+        <div className="leads-header-actions">
+          <button className="load-more-btn" onClick={() => void refreshCards()} disabled={loading}>
+            <RefreshCw size={16} /> {loading ? "Refreshing..." : "Refresh"}
+          </button>
+          <button className="new-lead-btn" onClick={() => navigate("/lead-create")}>
+            + Create Lead
+          </button>
+        </div>
       </div>
 
       <div className="leads-search-row">

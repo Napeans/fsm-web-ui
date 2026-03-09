@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, Phone, Search, Wrench } from "lucide-react";
+import { MapPin, Phone, RefreshCw, Search, Wrench } from "lucide-react";
 import api from "../../api/axios";
 import AppDialog from "../../components/AppDialog";
 import "./JobsList.css";
@@ -402,6 +402,9 @@ const JobsList = () => {
     <div className="leads-page">
       <div className="leads-header">
         <h2>My Jobs</h2>
+        <button className="load-more-btn" onClick={() => void fetchJobs(true)} disabled={loading}>
+          <RefreshCw size={16} /> {loading ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
 
       <div className="leads-search-row">
