@@ -21,9 +21,14 @@ const isUnauthenticatedPayload = (data: unknown) => {
 const redirectToLogin = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("fullName");
-  if (window.location.pathname !== "/") {
-    window.location.href = "/";
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
   }
+};
+
+const isAuthLoginRequest = (url?: string) => {
+  if (!url) return false;
+  return url.includes("/auth/login");
 };
 
 api.interceptors.request.use((config) => {
@@ -38,7 +43,7 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
-    if (isUnauthenticatedPayload(response.data)) {
+    if (isUnauthenticatedPayload(response.data) && !isAuthLoginRequest(response.config?.url)) {
       redirectToLogin();
       return Promise.reject(new Error("Unauthenticated"));
     }
@@ -47,7 +52,8 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
     const data = error?.response?.data;
-    if (status === 401 || isUnauthenticatedPayload(data)) {
+    const requestUrl = error?.config?.url as string | undefined;
+    if ((status === 401 || isUnauthenticatedPayload(data)) && !isAuthLoginRequest(requestUrl)) {
       redirectToLogin();
     }
     return Promise.reject(error);

@@ -64,6 +64,14 @@ const LeadCreate = () => {
   const isExistingCustomer = activeCustomerId > 0;
   const showAlert = (message: string) => setDialogMessage(message);
 
+  const toLocalDateTimePayload = (value: string) => {
+    const [datePart, timePart] = value.split("T");
+    if (!datePart || !timePart) return value;
+
+    const [hour = "00", minute = "00"] = timePart.split(":");
+    return `${datePart}T${hour}:${minute}:00`;
+  };
+
   const clearFieldError = (field: string) => {
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
@@ -425,7 +433,7 @@ const LeadCreate = () => {
       customerId: activeCustomerId,
       customerAddressId: selectedAddressId,
       serviceTypeId,
-      scheduledOn: new Date(scheduledDateTime).toISOString(),
+      scheduledOn: toLocalDateTimePayload(scheduledDateTime),
       remarks,
     };
 
