@@ -1,12 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, MapPin, Send, PlusCircle, Eraser } from "lucide-react";
-import { fetchCustomerByMobile, createLead, createCustomer } from "./lead.service";
+import { fetchCustomerByMobile, createLead, createCustomer, fetchServiceTypes } from "./lead.service";
 import { extractLatLng } from "../../utils/mapUtils";
 import AppDialog from "../../components/AppDialog";
 import AppLoader from "../../components/AppLoader";
 import "./LeadCreate.css";
-import type { CreateCustomerAddressRequest, CreateLeadRequest, CustomerCreateRequest } from "./lead.types";
+import type { CreateCustomerAddressRequest, CreateLeadRequest, CustomerCreateRequest, ServiceType } from "./lead.types";
 
 const LeadCreate = () => {
   const [mobile, setMobile] = useState("");
@@ -14,6 +14,8 @@ const LeadCreate = () => {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number>(0);
   const [serviceTypeId, setServiceTypeId] = useState<number>(0);
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+  const [loadingServiceTypes, setLoadingServiceTypes] = useState(false);
   const [scheduledDateTime, setScheduledDateTime] = useState("");
   const [remarks, setRemarks] = useState("");
   const [latLng, setLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -61,8 +63,46 @@ const LeadCreate = () => {
   const emailRef = useRef<HTMLInputElement | null>(null);
 
   const gstPattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isExistingCustomer = activeCustomerId > 0;
   const showAlert = (message: string) => setDialogMessage(message);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadServiceTypes = async () => {
+      try {
+        setLoadingServiceTypes(true);
+        const data = await fetchServiceTypes();
+        const source = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : Array.isArray(data?.Data) ? data.Data : [];
+        const mapped = source
+          .map((item: any) => ({
+            serviceTypeId: Number(item?.ServiceTypeId ?? item?.serviceTypeId ?? 0),
+            serviceName: String(item?.ServiceName ?? item?.serviceName ?? "").trim(),
+          }))
+          .filter((item: ServiceType) => item.serviceTypeId > 0 && item.serviceName);
+
+        if (mounted) {
+          setServiceTypes(mapped);
+        }
+      } catch (error) {
+        console.error("Service type fetch failed", error);
+        if (mounted) {
+          showAlert("Unable to load service types");
+        }
+      } finally {
+        if (mounted) {
+          setLoadingServiceTypes(false);
+        }
+      }
+    };
+
+    void loadServiceTypes();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const toLocalDateTimePayload = (value: string) => {
     const [datePart, timePart] = value.split("T");
@@ -289,8 +329,8 @@ const LeadCreate = () => {
     if (customerForm.whatsappNo.trim() && !/^\d{10}$/.test(customerForm.whatsappNo.trim())) {
       errors.whatsappNo = "Whatsapp number must be 10 digits";
     }
-    if (customerForm.emailId.trim() && !customerForm.emailId.trim().toLowerCase().endsWith("@gmail.com")) {
-      errors.emailId = "Email must end with @gmail.com";
+    if (customerForm.emailId.trim() && !emailPattern.test(customerForm.emailId.trim())) {
+      errors.emailId = "Enter a valid email address";
     }
     if (!addressForm.addressLine1?.trim()) {
       errors.addressLine1 = "AddressLine1 is required";
@@ -591,10 +631,15 @@ const LeadCreate = () => {
                   clearFieldError("serviceTypeId");
                 }}
               >
-                <option value="">Choose a service...</option>
-                <option value={1}>AC Installation</option>
-                <option value={2}>AC Servicing</option>
-                <option value={3}>Gas Filling</option>
+                <option value="">
+                  {loadingServiceTypes ? "Loading service types..." : "Choose a service..."}
+                </option>
+                {!loadingServiceTypes &&
+                  serviceTypes.map((service) => (
+                    <option key={service.serviceTypeId} value={service.serviceTypeId}>
+                      {service.serviceName}
+                    </option>
+                  ))}
               </select>
               {fieldErrors.serviceTypeId && <p className="error-text">{fieldErrors.serviceTypeId}</p>}
             </div>

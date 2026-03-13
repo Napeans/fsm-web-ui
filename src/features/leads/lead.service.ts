@@ -15,3 +15,8 @@ export const createLead = async (data: CreateLeadRequest) => {
   const res = await api.post("/leads/create", data);
   return res.data;
 };
+
+export const fetchServiceTypes = async () => {
+  const res = await api.get("/leads/get-service-types");
+  return res.data;
+};

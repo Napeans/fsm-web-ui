@@ -12,6 +12,11 @@ export interface CustomerAddress {
   longitude: number;
 }
 
+export interface ServiceType {
+  serviceTypeId: number;
+  serviceName: string;
+}
+
 export interface CreateLeadRequest {
   customerId?: number;
   customerAddressId?: number;
