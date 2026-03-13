@@ -1,6 +1,7 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
+  ArrowUp,
   Brain,
   Briefcase,
   Building,
@@ -24,6 +25,8 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import api from "../../api/axios";
+import AppDialog from "../../components/AppDialog";
 import logo from "../../assets/img/logo.png";
 import playIcon from "../../assets/img/google-play.png";
 import appleIcon from "../../assets/img/apple-logo.png";
@@ -54,10 +57,24 @@ type PlanItem = {
   highlighted?: boolean;
 };
 
+type DemoForm = {
+  name: string;
+  mobileNo: string;
+  email: string;
+  organization: string;
+  noOfEmployees: string;
+  locationCity: string;
+  locationState: string;
+};
+
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
   { label: "Contact", href: "#contact" },
+  { label: "Privacy", to: "/policy" },
+  { label: "Terms", to: "/terms" },
+  { label: "Refund", to: "/refund-policy" },
+  { label: "Data Security", to: "/data-security" },
 ];
 
 const featureItems: CardItem[] = [
@@ -136,9 +153,24 @@ const stats = [
 ];
 
 const LandingPage = () => {
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [submittingDemo, setSubmittingDemo] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [demoErrors, setDemoErrors] = useState<Partial<Record<keyof DemoForm, string>>>({});
+  const [demoForm, setDemoForm] = useState<DemoForm>({
+    name: "",
+    mobileNo: "",
+    email: "",
+    organization: "",
+    noOfEmployees: "",
+    locationCity: "",
+    locationState: "",
+  });
 
   const slides = useMemo<SlideItem[]>(
     () => [
@@ -154,6 +186,22 @@ const LandingPage = () => {
 
   const currentSlide = slides[slideIndex];
 
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 280);
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("demo") === "1") {
+      setShowDemoModal(true);
+      window.history.replaceState(null, "", location.pathname + location.hash);
+    }
+  }, [location.pathname, location.search, location.hash]);
+
   const nextSlide = () => {
     setSlideIndex((prev) => (prev + 1) % slides.length);
   };
@@ -162,14 +210,97 @@ const LandingPage = () => {
     setSlideIndex((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
+  const openDemo = () => {
+    setShowDemoModal(true);
+  };
+
+  const closeDemo = () => {
+    setShowDemoModal(false);
+    setDemoErrors({});
+  };
+
+  const updateDemoField = (field: keyof DemoForm, value: string) => {
+    setDemoForm((prev) => ({ ...prev, [field]: value }));
+    setDemoErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const validateDemoForm = () => {
+    const errors: Partial<Record<keyof DemoForm, string>> = {};
+
+    if (!demoForm.name.trim()) errors.name = "Name is required";
+    if (!/^\d{10}$/.test(demoForm.mobileNo.trim())) errors.mobileNo = "Mobile number must be 10 digits";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(demoForm.email.trim())) errors.email = "Enter a valid email";
+    if (!demoForm.organization.trim()) errors.organization = "Organization is required";
+    if (!demoForm.noOfEmployees.trim()) errors.noOfEmployees = "No of employees is required";
+    if (!demoForm.locationCity.trim()) errors.locationCity = "City is required";
+    if (!demoForm.locationState.trim()) errors.locationState = "State is required";
+
+    setDemoErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const submitDemo = async () => {
+    if (!validateDemoForm() || submittingDemo) {
+      return;
+    }
+
+    try {
+      setSubmittingDemo(true);
+      await api.post("api/unknown/book-demo", {
+        name: demoForm.name.trim(),
+        mobileNo: demoForm.mobileNo.trim(),
+        email: demoForm.email.trim(),
+        organization: demoForm.organization.trim(),
+        noOfEmployees: demoForm.noOfEmployees.trim(),
+        locationCity: demoForm.locationCity.trim(),
+        locationState: demoForm.locationState.trim(),
+      });
+      closeDemo();
+      setDemoForm({
+        name: "",
+        mobileNo: "",
+        email: "",
+        organization: "",
+        noOfEmployees: "",
+        locationCity: "",
+        locationState: "",
+      });
+      setDialogMessage("Demo request submitted successfully.");
+    } catch {
+      setDialogMessage("Unable to submit demo request right now.");
+    } finally {
+      setSubmittingDemo(false);
+    }
+  };
+
   const renderActionButtons = (mobile = false): ReactNode => (
     <div className="nav-buttons">
       <Link className="btn-ghost" to="/login" onClick={() => mobile && setMenuOpen(false)}>
         Login
       </Link>
-      <a className="btn-primary" href="#contact" onClick={() => mobile && setMenuOpen(false)}>
+      <button
+        className="btn-ghost register-btn"
+        onClick={() => {
+          if (mobile) setMenuOpen(false);
+          openDemo();
+        }}
+      >
+        Register
+      </button>
+      <button
+        className="btn-primary"
+        onClick={() => {
+          if (mobile) setMenuOpen(false);
+          openDemo();
+        }}
+      >
         Book a Demo
-      </a>
+      </button>
     </div>
   );
 
@@ -180,17 +311,22 @@ const LandingPage = () => {
           <div className="brand">
             <img src={logo} alt="GoField logo" className="brand-logo" />
             <div>
-              <p className="brand-kicker">GoField.in</p>
               <h1>GoField</h1>
             </div>
           </div>
 
           <nav className="nav-links desktop-only">
-            {navLinks.map((item) => (
-              <a key={item.label} href={item.href}>
-                {item.label}
-              </a>
-            ))}
+            {navLinks.map((item) =>
+              "href" in item ? (
+                <a key={item.label} href={item.href}>
+                  {item.label}
+                </a>
+              ) : (
+                <Link key={item.label} to={item.to}>
+                  {item.label}
+                </Link>
+              )
+            )}
           </nav>
 
           <div className="desktop-only">{renderActionButtons()}</div>
@@ -202,11 +338,17 @@ const LandingPage = () => {
 
         {menuOpen && (
           <div className="mobile-menu">
-            {navLinks.map((item) => (
-              <a key={item.label} href={item.href} onClick={() => setMenuOpen(false)}>
-                {item.label}
-              </a>
-            ))}
+            {navLinks.map((item) =>
+              "href" in item ? (
+                <a key={item.label} href={item.href} onClick={() => setMenuOpen(false)}>
+                  {item.label}
+                </a>
+              ) : (
+                <Link key={item.label} to={item.to} onClick={() => setMenuOpen(false)}>
+                  {item.label}
+                </Link>
+              )
+            )}
             {renderActionButtons(true)}
           </div>
         )}
@@ -238,9 +380,12 @@ const LandingPage = () => {
             <Link className="btn-primary" to="/login">
               Start with Login
             </Link>
-            <a className="btn-ghost" href="#contact">
+            <button className="btn-ghost register-btn" onClick={openDemo}>
+              Register
+            </button>
+            <button className="btn-ghost" onClick={openDemo}>
               Book a Demo
-            </a>
+            </button>
           </div>
         </div>
 
@@ -399,7 +544,9 @@ const LandingPage = () => {
                     </li>
                   ))}
                 </ul>
-                <button className="btn-ghost">Get Started</button>
+                <button className="btn-ghost" onClick={openDemo}>
+                  Get Started
+                </button>
               </article>
             );
           })}
@@ -425,15 +572,150 @@ const LandingPage = () => {
       </section>
 
       <footer className="landing-footer">
-        <p>(c) {new Date().getFullYear()} GoField. Built by Napeans Technologies.</p>
-        <div>
-          <Link to="/policy">Privacy</Link>
-          <Link to="/terms">Terms</Link>
-          <Link to="/login">Login</Link>
-          <a href="#contact">Book a demo</a>
-          <a href="mailto:mailus@napeans.com?subject=Careers%20at%20GoField">Careers</a>
+        <div className="footer-top">
+          <div className="footer-brand">
+            <div className="brand">
+              <img src={logo} alt="GoField logo" className="brand-logo" />
+              <div>
+                <h3>GoField</h3>
+              </div>
+            </div>
+            <p>
+              Field service management platform for high-volume service teams. Run dispatch, field updates, billing,
+              and reporting from one connected workflow.
+            </p>
+          </div>
+
+          <div className="footer-links-grid">
+            <section>
+              <h4>Product</h4>
+              <a href="#features">Features</a>
+              <a href="#pricing">Pricing</a>
+              <button className="footer-link-btn" onClick={openDemo}>
+                Book a demo
+              </button>
+              <Link to="/login">Login</Link>
+              <button className="footer-link-btn" onClick={openDemo}>
+                Register
+              </button>
+            </section>
+            <section>
+              <h4>Company</h4>
+              <a href="#contact">Contact</a>
+              <a href="mailto:mailus@napeans.com?subject=Careers%20at%20GoField">Careers</a>
+              <a href="https://napeans.com" target="_blank" rel="noreferrer">
+                Napeans Technologies
+              </a>
+            </section>
+            <section>
+              <h4>Legal</h4>
+              <Link to="/policy">Privacy</Link>
+              <Link to="/terms">Terms</Link>
+              <Link to="/refund-policy">Refund Policy</Link>
+              <Link to="/data-security">Data Security</Link>
+            </section>
+            <section>
+              <h4>Contact</h4>
+              <a href="tel:+919384012319">+91 93840 12319</a>
+              <a href="mailto:mailus@napeans.com">mailus@napeans.com</a>
+              <a href="https://gofield.in" target="_blank" rel="noreferrer">
+                gofield.in
+              </a>
+            </section>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <p>Copyright {new Date().getFullYear()} GoField. Built by Napeans Technologies.</p>
         </div>
       </footer>
+
+      {showDemoModal && (
+        <div className="demo-modal-overlay">
+          <div className="demo-modal-card">
+            <div className="demo-modal-header">
+              <h3>Register</h3>
+              <button onClick={closeDemo} aria-label="Close demo popup">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="demo-modal-grid">
+              <label>
+                Name
+                <input value={demoForm.name} onChange={(e) => updateDemoField("name", e.target.value)} />
+                {demoErrors.name && <span>{demoErrors.name}</span>}
+              </label>
+              <label>
+                MobileNo
+                <input
+                  value={demoForm.mobileNo}
+                  maxLength={10}
+                  onChange={(e) => updateDemoField("mobileNo", e.target.value.replace(/\\D/g, "").slice(0, 10))}
+                />
+                {demoErrors.mobileNo && <span>{demoErrors.mobileNo}</span>}
+              </label>
+              <label>
+                Email
+                <input value={demoForm.email} onChange={(e) => updateDemoField("email", e.target.value)} />
+                {demoErrors.email && <span>{demoErrors.email}</span>}
+              </label>
+              <label>
+                Organization
+                <input value={demoForm.organization} onChange={(e) => updateDemoField("organization", e.target.value)} />
+                {demoErrors.organization && <span>{demoErrors.organization}</span>}
+              </label>
+              <label>
+                No of Employees
+                <input
+                  value={demoForm.noOfEmployees}
+                  onChange={(e) => updateDemoField("noOfEmployees", e.target.value)}
+                />
+                {demoErrors.noOfEmployees && <span>{demoErrors.noOfEmployees}</span>}
+              </label>
+              <label>
+                Location City
+                <input value={demoForm.locationCity} onChange={(e) => updateDemoField("locationCity", e.target.value)} />
+                {demoErrors.locationCity && <span>{demoErrors.locationCity}</span>}
+              </label>
+              <label>
+                Location State
+                <input value={demoForm.locationState} onChange={(e) => updateDemoField("locationState", e.target.value)} />
+                {demoErrors.locationState && <span>{demoErrors.locationState}</span>}
+              </label>
+            </div>
+
+            <div className="demo-modal-actions">
+              <button className="btn-ghost" onClick={closeDemo}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={() => void submitDemo()} disabled={submittingDemo}>
+                {submittingDemo ? "Submitting..." : "Book Demo"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showScrollTop && (
+        <button
+          className="scroll-top-btn"
+          aria-label="Scroll to top"
+          title="Back to top"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          <ArrowUp size={16} />
+        </button>
+      )}
+
+      <AppDialog
+        open={Boolean(dialogMessage)}
+        title="GoField"
+        message={dialogMessage}
+        mode="alert"
+        onConfirm={() => setDialogMessage("")}
+        onClose={() => setDialogMessage("")}
+      />
     </div>
   );
 };

@@ -98,9 +98,9 @@ const Login = () => {
       <div className="login-card">
         <div className="login-left">
          <div className="logo-circle">
-  <img src={logo} alt="FSM Logo" />
+  <img src={logo} alt="GoField Logo" />
 </div>
-          <h1>FSM Pro</h1>
+          <h1>GoField Pro</h1>
           <p>Manage. Assign. Deliver.</p>
         </div>
 
@@ -139,7 +139,7 @@ const Login = () => {
           </button>
 
           <div className="auth-links">
-            <Link to="/register">Register</Link>
+            <Link to="/?demo=1">Register</Link>
             <Link to="/">Back to Website</Link>
           </div>
         </div>

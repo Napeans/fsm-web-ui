@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { 
   LayoutDashboard,
   UserPlus, 
@@ -26,13 +26,12 @@ const DashboardLayout = ({ children }: Props) => {
     }
     return window.innerWidth >= 768;
   });
-  const navigate = useNavigate();
   const fullName = localStorage.getItem("fullName")?.trim() || "Admin User";
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("fullName");
-    navigate("/");
+    window.location.href = "/";
   };
 
   return (

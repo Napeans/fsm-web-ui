@@ -9,6 +9,8 @@ import UserManagement from "../features/users/UserManagement";
 import LandingPage from "../features/marketing/LandingPage";
 import PrivacyPolicy from "../features/marketing/PrivacyPolicy";
 import TermsConditions from "../features/marketing/TermsConditions";
+import RefundPolicy from "../features/marketing/RefundPolicy";
+import DataSecurity from "../features/marketing/DataSecurity";
 import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -52,6 +54,8 @@ const AppRoutes = () => {
 
       <Route path="/policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsConditions />} />
+      <Route path="/refund-policy" element={<RefundPolicy />} />
+      <Route path="/data-security" element={<DataSecurity />} />
 
       {/* Protected Routes */}
       <Route
